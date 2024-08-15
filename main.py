@@ -8,6 +8,8 @@ import numpy as np
 import json
 from bidict import bidict
 
+from file_manager import FileManager
+
 os.environ['OPENAI_API_KEY'] = "sk-proj-5Ay4ISQv4kBgYs7ijKreT3BlbkFJeTIi2OKaevKN2bGcu0sc"
 
 
@@ -25,14 +27,16 @@ class Thingo:
         self.n_dimensions = n_dimensions
         self.vdb_index: Union[faiss.IndexFlatL2, None] = None
 
-        self.vector_db_path = vector_db_path
-        self.link_db_path = link_db_path
+        self.file_manager = FileManager(
+            vector_db_path,
+            link_db_path
+        )
 
         self.link_db: bidict = bidict()
 
         if os.path.isfile(vector_db_path) and os.path.isfile(link_db_path):
-            self.load_db()
-            self.load_link()
+            self.file_manager.load_db()
+            self.file_manager.load_link()
         else:
             self.setup_db()
 

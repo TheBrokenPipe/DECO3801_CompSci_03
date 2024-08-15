@@ -1,28 +1,26 @@
-import faiss, json
+import faiss
+import json
+from bidict import bidict
+
 
 class FileManager:
 
-    def __init__(self):
-
+    def __init__(self, vector_db_path, link_db_path):
         self.vector_db_path = vector_db_path
         self.link_db_path = link_db_path
 
-        pass
+    def save_db(self, vector_index: faiss.IndexFlatL2):
+        faiss.write_index(vector_index, self.vector_db_path)
 
-    def save_db(self):
-        assert self.vdb_index is not None, "Vector database is not setup"
-        faiss.write_index(self.vdb_index, self.vector_db_path)
+    def load_db(self) -> faiss.IndexFlatL2:
+        vdb_index: faiss.IndexFlatL2 = faiss.read_index(self.vector_db_path)
+        return vdb_index
 
-    def load_db(self):
-        assert self.vdb_index is None, "Vector database is already setup"
-        self.vdb_index = faiss.read_index(self.vector_db_path)
-
-    def save_link(self):
-        assert self.vdb_index is not None, "Vector database is not setup"
+    def save_link(self, link_db: bidict):
         with open(self.link_db_path, 'w') as file:
-            json.dump(dict(self.link_db), file)
+            json.dump(dict(link_db), file)
 
-    def load_link(self):
-        assert self.vdb_index is None, "Vector database is already setup"
+    def load_link(self) -> bidict:
         with open(self.link_db_path) as f:
-            self.link_db = bidict(json.load(f))
+            link_db = bidict(json.load(f))
+        return link_db
