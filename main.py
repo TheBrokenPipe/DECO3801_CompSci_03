@@ -17,7 +17,9 @@ class Thingo:
     open_ai_text_model = "gpt-4o-mini"
 
     def __init__(
-        self, n_dimensions: int = 400, vector_db_path: str = "index_file.index", link_db_path: str = "link.json"
+        self, n_dimensions: int = 400,
+            vector_db_path: str = "data/databases/index_file.index",
+            link_db_path: str = "data/databases/link.json"
     ):
         self.open_ai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
         self.n_dimensions = n_dimensions
@@ -38,24 +40,6 @@ class Thingo:
         assert self.vdb_index is None, "Vector database is already setup"
         self.vdb_index = faiss.IndexFlatL2(self.n_dimensions)  # L2 distance (Euclidean distance)
 
-    def save_db(self):
-        assert self.vdb_index is not None, "Vector database is not setup"
-        faiss.write_index(self.vdb_index, self.vector_db_path)
-
-    def load_db(self):
-        assert self.vdb_index is None, "Vector database is already setup"
-        self.vdb_index = faiss.read_index(self.vector_db_path)
-
-    def save_link(self):
-        assert self.vdb_index is not None, "Vector database is not setup"
-        with open(self.link_db_path, 'w') as file:
-            json.dump(dict(self.link_db), file)
-
-    def load_link(self):
-        assert self.vdb_index is None, "Vector database is already setup"
-        with open(self.link_db_path) as f:
-            self.link_db = bidict(json.load(f))
-
     @property
     def size(self):
         return self.vdb_index.ntotal
@@ -64,7 +48,7 @@ class Thingo:
         # TODO verify / ensure size
         next_index = self.size
         self.vdb_index.add(np.atleast_2d(embedding))
-        self.link_db["next_index"] = file_path
+        self.link_db[next_index] = file_path
 
     def get_closest_indexes(self, embedding: np.ndarray, k=5) -> tuple[list[float], list[int]]:
         """returns distances, indexes"""
@@ -174,7 +158,7 @@ class Thingo:
         }
 
     def save_text_file(self, text: str) -> str:
-        file_path = "file_test.txt"
+        file_path = "data/saved_docs/file_test.txt"
         with open(file_path, 'w') as f:
             f.write(text)
         return file_path
@@ -189,7 +173,7 @@ class Thingo:
 
     def add_text_document(self, file_path: str):
         """from path"""
-        with open(file_path, "rb") as file:
+        with open(file_path, "r") as file:
             text = str(file.read())
         self._add_doc(text, file_path)
 
@@ -219,7 +203,7 @@ print("Transcribing:")
 # t.add_to_db(t.embed_text("Pizza hut"))
 # t.save_db()
 
-transcription = t.transcribe_audio_file("en-US_AntiBERTa_for_word_boosting_testing.wav")
+transcription = t.transcribe_audio_file("data/audio_recordings/en-US_AntiBERTa_for_word_boosting_testing.wav")
 print(transcription)
 
 # em = t.embed_text(transcription)
