@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 import faiss
 from openai import OpenAI
 from typing import Union
@@ -6,63 +7,31 @@ import numpy as np
 from bidict import bidict
 
 from file_manager import FileManager
+from RAG import RAG
+from ASR import ASR
 
-os.environ['OPENAI_API_KEY'] = "sk-proj-5Ay4ISQv4kBgYs7ijKreT3BlbkFJeTIi2OKaevKN2bGcu0sc"
+
+load_dotenv()
+
 
 class Thingo:
 
-    open_ai_asr_model = "whisper-1"
     open_ai_text_model = "gpt-4o-mini"
 
     def __init__(
         self, n_dimensions: int = 400,
-            vector_db_path: str = "data/databases/index_file.index",
-            link_db_path: str = "data/databases/link.json"
+        vector_db_path: str = "data/databases/index_file.index",
+        link_db_path: str = "data/databases/link.json"
     ):
         self.open_ai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
-        self.n_dimensions = n_dimensions
         self.vdb_index: Union[faiss.IndexFlatL2, None] = None
 
         self.file_manager = FileManager(
             vector_db_path,
             link_db_path
         )
-
-        self.link_db: bidict = bidict()
-
-        if os.path.isfile(vector_db_path) and os.path.isfile(link_db_path):
-            self.file_manager.load_db()
-            self.file_manager.load_link()
-        else:
-            self.setup_db()
-
-    def setup_db(self):
-        assert self.vdb_index is None, "Vector database is already setup"
-        self.vdb_index = faiss.IndexFlatL2(self.n_dimensions)  # L2 distance (Euclidean distance)
-
-    @property
-    def size(self):
-        return self.vdb_index.ntotal
-
-    def add_to_db(self, embedding: np.ndarray, file_path: str):
-        # TODO verify / ensure size
-        next_index = self.size
-        self.vdb_index.add(np.atleast_2d(embedding))
-        self.link_db[next_index] = file_path
-
-    def get_closest_indexes(self, embedding: np.ndarray, k=5) -> tuple[list[float], list[int]]:
-        """returns distances, indexes"""
-        # TODO verify / ensure size
-        return self.vdb_index.search(np.atleast_2d(embedding), k=k)
-
-    def transcribe_audio_file(self, file_path: str) -> str:
-        """from path"""
-        with open(file_path, "rb") as audio_file:
-            transcription = self.open_ai_client.audio.transcriptions.create(
-                model=self.open_ai_asr_model,
-                file=audio_file
-            )
-        return transcription.text
+        self.rag = RAG(self.file_manager)
+        self.asr = ASR(self.file_manager)
 
     def summary_section(self, messages: list[dict]) -> str:
         response = self.open_ai_client.chat.completions.create(
@@ -157,18 +126,12 @@ class Thingo:
             'sentiment': sentiment
         }
 
-    def save_text_file(self, text: str) -> str:
-        file_path = "data/saved_docs/file_test.txt"
-        with open(file_path, 'w') as f:
-            f.write(text)
-        return file_path
-
     def add_audio_meeting_transcript_document(self, file_path: str):
         """from path"""
         # assert False  # TODO save transcript as a txt file
         transcription = self.transcribe_audio_file(file_path)
         summary = self.summarise_meeting(transcription)['abstract_summary']  # TODO just using the abstract for now
-        save_transcript_file_path = self.save_text_file(summary)
+        save_transcript_file_path = self.file_manager.save_text_file(summary)
         self._add_doc(summary, save_transcript_file_path)
 
     def add_text_document(self, file_path: str):
