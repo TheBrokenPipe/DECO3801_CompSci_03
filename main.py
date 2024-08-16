@@ -1,17 +1,13 @@
 import os
 import faiss
 from openai import OpenAI
-from openai.pagination import SyncPage
-import json
 from typing import Union
 import numpy as np
-import json
 from bidict import bidict
 
 from file_manager import FileManager
 
 os.environ['OPENAI_API_KEY'] = "sk-proj-5Ay4ISQv4kBgYs7ijKreT3BlbkFJeTIi2OKaevKN2bGcu0sc"
-
 
 class Thingo:
 

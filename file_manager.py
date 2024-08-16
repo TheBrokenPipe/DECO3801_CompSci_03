@@ -2,7 +2,6 @@ import faiss
 import json
 from bidict import bidict
 
-
 class FileManager:
 
     def __init__(self, vector_db_path, link_db_path):
