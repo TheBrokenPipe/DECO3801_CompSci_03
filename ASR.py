@@ -1,9 +1,11 @@
+from openai import OpenAI
+
 
 class ASR:
 
     open_ai_asr_model = "whisper-1"
 
-    def __init__(self, open_ai_client):
+    def __init__(self, open_ai_client: OpenAI):
         self.open_ai_client = open_ai_client
 
     def transcribe_audio_file(self, file_path: str) -> str:
