@@ -1,6 +1,14 @@
 # an example page
 import streamlit as st
 # TODO: import backend
+
+
+# retrieving stuff from backend
+def get_chat_response():
+    # TODO: get stuff from the backend
+    return "Response!"
+
+
 st.write("Hello world")
 
 with st.chat_message("user"):
