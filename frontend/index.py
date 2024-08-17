@@ -9,6 +9,19 @@ def get_chat_response():
     return "Response!"
 
 
+# sending suff to the backend
+def send_transcript(transcript):
+    return  # TODO
+
+
+def send_doc(doc):
+    return  # TODO
+
+
+def send_message(message):
+    return  # TODO
+
+
 st.write("Hello world")
 
 with st.chat_message("user"):
