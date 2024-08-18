@@ -3,3 +3,4 @@ typing
 bidict
 openai
 faiss-cpu
+streamlit
