@@ -3,10 +3,12 @@ import streamlit as st
 # TODO: import backend
 
 
-# retrieving stuff from backend
+# retrieving stuff from backend and add to history
 def get_chat_response():
+    response = "Response!"
+    st.session_state.messages.append({"role": "assistant", "content": response})
     # TODO: get stuff from the backend
-    return "Response!"
+    return response
 
 
 # gets an array of dictionaries with keys:
@@ -25,8 +27,9 @@ def send_doc(doc):
     return  # TODO
 
 
-def send_message(message):
-    return  # TODO
+# role is user or assistant - also adds to history
+def send_message(content):
+    st.session_state.messages.append({"role": "user", "content": content})
 
 
 # constants
@@ -49,13 +52,9 @@ if chat_input:
     # Display user message in chat message container
     st.chat_message("user").markdown(chat_input)
     # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": chat_input})
+    send_message(chat_input)
 
     response = get_chat_response()
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
         st.markdown(response)
-    # Add assistant response to chat history
-    st.session_state.messages.append(
-        {"role": "assistant", "content": response}
-    )
