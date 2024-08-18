@@ -9,6 +9,13 @@ def get_chat_response():
     return "Response!"
 
 
+# gets an array of dictionaries with keys:
+#  - role (the role of the message (user, assistant))
+#  - content (the message to display)
+def get_chat_history():
+    return st.session_state.messages
+
+
 # sending suff to the backend
 def send_transcript(transcript):
     return  # TODO
@@ -22,15 +29,33 @@ def send_message(message):
     return  # TODO
 
 
-st.write("Hello world")
+# constants
+CHAT_PROMPT = "Ask a question about your meetings"  # TODO: confirm with group
 
-with st.chat_message("user"):
-    st.write("Hello 👋")
+# set up
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-uploaded_files = st.file_uploader(
-    "Choose a CSV file", accept_multiple_files=True
-)
-for uploaded_file in uploaded_files:
-    bytes_data = uploaded_file.read()
-    st.write("filename:", uploaded_file.name)
-    st.write(bytes_data)
+# Display chat messages from history on app rerun
+for message in get_chat_history():
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# display input box
+chat_input = st.chat_input(CHAT_PROMPT)
+
+# React to user input
+if chat_input:
+    # Display user message in chat message container
+    st.chat_message("user").markdown(chat_input)
+    # Add user message to chat history
+    st.session_state.messages.append({"role": "user", "content": chat_input})
+
+    response = get_chat_response()
+    # Display assistant response in chat message container
+    with st.chat_message("assistant"):
+        st.markdown(response)
+    # Add assistant response to chat history
+    st.session_state.messages.append(
+        {"role": "assistant", "content": response}
+    )
