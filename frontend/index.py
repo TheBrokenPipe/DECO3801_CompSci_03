@@ -56,5 +56,4 @@ if chat_input:
 
     response = get_chat_response()
     # Display assistant response in chat message container
-    with st.chat_message("assistant"):
-        st.markdown(response)
+    st.chat_message("assistant").markdown(response)
