@@ -19,11 +19,13 @@ def get_chat_history():
 
 
 # sending suff to the backend
-def send_transcript(transcript):
+def send_audio(transcript):
+    st.write("audio sent")
     return  # TODO
 
 
 def send_doc(doc):
+    st.write("doc sent")
     return  # TODO
 
 
@@ -34,10 +36,32 @@ def send_message(content):
 
 # constants
 CHAT_PROMPT = "Ask a question about your meetings"  # TODO: confirm with group
+AUDIO_TYPES = ("mp3", "wav", "m4a")
+SUPPORTING_MEDIA_TYPES = ("txt",)
 
 # set up
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+# uploading files
+upload1, upload2 = st.columns(2)
+#  - uploading audio files
+uploaded_audio = upload1.file_uploader(
+    label="Upload meeting transcription",
+    accept_multiple_files=True,
+    type=list(AUDIO_TYPES)
+) 
+for uploaded_audio in uploaded_audio:
+    send_audio(uploaded_audio)
+
+#  - uploading supporting files
+supporting_docs = upload2.file_uploader(
+    label="Uploading supporting text documents",
+    accept_multiple_files=True,
+    type=list(SUPPORTING_MEDIA_TYPES)
+)
+for doc in supporting_docs:
+    send_doc(doc)
 
 # Display chat messages from history on app rerun
 for message in get_chat_history():
