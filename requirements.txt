@@ -5,3 +5,4 @@ openai
 faiss-cpu
 streamlit
 langchain
+python-dotenv
