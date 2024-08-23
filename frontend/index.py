@@ -1,11 +1,16 @@
 # an example page
 import streamlit as st
-# TODO: import backend
+from manager import Thingo
+from dotenv import load_dotenv
+
+load_dotenv()
+
+manager = Thingo(10)
 
 
 # retrieving stuff from backend and add to history
-def get_chat_response():
-    response = "Response!"
+def get_chat_response(query_text):
+    response = manager.query(query_text)
     st.session_state.messages.append({"role": "assistant", "content": response})
     # TODO: get stuff from the backend
     return response
@@ -20,7 +25,12 @@ def get_chat_history():
 
 # sending suff to the backend
 def send_audio(transcript):
+    print(transcript)
+    print(type(transcript))
+    manager.upload_file_from_streamlit(transcript)
+    return
     st.write("audio sent")
+    manager.add_audio_meeting_transcript_document()
     return  # TODO
 
 
@@ -78,6 +88,6 @@ if chat_input:
     # Add user message to chat history
     send_message(chat_input)
 
-    response = get_chat_response()
+    response = get_chat_response(chat_input)
     # Display assistant response in chat message container
     st.chat_message("assistant").markdown(response)
