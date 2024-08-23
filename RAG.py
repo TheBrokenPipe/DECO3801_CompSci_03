@@ -25,11 +25,13 @@ class RAG:
 
     @property
     def size(self):
+        # print("Num embeddings saved: ", self.vdb_index.ntotal)
         return self.vdb_index.ntotal
 
     def init_db(self):
         assert self.vdb_index is None, "Vector database is already setup"
         self.vdb_index = faiss.IndexFlatL2(self.n_dimensions)  # L2 distance (Euclidean distance)
+        self.link_db = bidict()
 
     def embed_text(self, text: str) -> np.ndarray:
         model_name = "text-embedding-3-small"  # allows for dim def (unlike ada-002)
@@ -43,8 +45,9 @@ class RAG:
     def _add_to_db(self, embedding: np.ndarray, file_path: str):
         # TODO verify / ensure size
         next_index = self.size
+        print(self.size)
         self.vdb_index.add(np.atleast_2d(embedding))
-        self.link_db[next_index] = file_path
+        self.link_db[str(next_index)] = file_path
 
     def add_document(self, text: str, file_path: str):
         embedding = self.embed_text(text)
@@ -55,11 +58,35 @@ class RAG:
         # TODO verify / ensure size
         return self.vdb_index.search(np.atleast_2d(embedding), k=k)
 
-    def get_closest_docs(self, query: str, k=3):
-        embedding = self.embed_text(query)
+    def get_docs_from_indexes(self, indexes: list):
+        return [self.link_db[str(i)] for i in indexes if i not in [str(-1), -1]]
+
+    def get_closest_docs(self, query_text: str, k=3):
+        embedding = self.embed_text(query_text)
         distances, indexes = self.get_closest_indexes(embedding, k)
-        print(indexes)
-        return indexes
+        return self.get_docs_from_indexes(indexes[0])
+
+    def query(self, query_text: str):
+        with open(self.get_closest_docs(query_text)[0], 'r') as f:
+            context = f.read()
+
+        system_prompt = [
+            {
+                "role": "system",
+                "content": f"You are an assistant for question-answering tasks. "
+                           f"Use the following pieces of retrieved context to answer "
+                           f"the question. If you don't know the answer, say that you "
+                           f"don't know. Use three sentences maximum and keep the "
+                           f"answer concise. \n\n"
+                           f"{context}"
+            },
+            {
+                "role": "user",
+                "content": query_text
+            }
+        ]
+
+        return self.summary_section(system_prompt)
 
     def summary_section(self, messages: list[dict]) -> str:
         response = self.open_ai_client.chat.completions.create(
