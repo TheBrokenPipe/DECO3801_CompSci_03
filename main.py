@@ -9,13 +9,10 @@ from file_manager import FileManager
 from RAG import RAG
 from ASR import ASR
 
-
 load_dotenv()
 
 
 class Thingo:
-
-    open_ai_text_model = "gpt-4o-mini"
 
     def __init__(
         self, n_dimensions: int = 400,
@@ -29,154 +26,58 @@ class Thingo:
             vector_db_path,
             link_db_path
         )
-        self.rag = RAG(self.file_manager)
-        self.asr = ASR(self.file_manager)
-
-    def summary_section(self, messages: list[dict]) -> str:
-        response = self.open_ai_client.chat.completions.create(
-            model=self.open_ai_text_model,
-            temperature=0,
-            messages=messages
-        )
-        return response.choices[0].message.content
-
-    def abstract_summary_extraction(self, transcription):
-        return self.summary_section(
-            [
-                {
-                    "role": "system",
-                    "content": "You are a highly skilled AI trained in language comprehension and summarization. "
-                               "I would like you to read the following text and summarize it into a concise abstract "
-                               "paragraph. Aim to retain the most important points, providing a coherent and readable "
-                               "summary that could help a person understand the main points of the discussion without "
-                               "needing to read the entire text. Please avoid unnecessary details or tangential points."
-                },
-                {
-                    "role": "user",
-                    "content": transcription
-                }
-            ]
-        )
-
-    def key_points_extraction(self, transcription):
-        return self.summary_section(
-            [
-                {
-                    "role": "system",
-                    "content": "You are a proficient AI with a specialty in distilling information into key points. "
-                               "Based on the following text, identify and list the main points that were discussed or "
-                               "brought up. These should be the most important ideas, findings, or topics that are "
-                               "crucial to the essence of the discussion. Your goal is to provide a list that someone "
-                               "could read to quickly understand what was talked about."
-                },
-                {
-                    "role": "user",
-                    "content": transcription
-                }
-            ]
-        )
-
-    def action_item_extraction(self, transcription):
-        return self.summary_section(
-            [
-                {
-                    "role": "system",
-                    "content": "You are an AI expert in analyzing conversations and extracting action items. "
-                               "Please review the text and identify any tasks, assignments, or actions that were "
-                               "agreed upon or mentioned as needing to be done. These could be tasks assigned to "
-                               "specific individuals, or general actions that the group has decided to take. "
-                               "Please list these action items clearly and concisely."
-                },
-                {
-                    "role": "user",
-                    "content": transcription
-                }
-            ]
-        )
-
-    def sentiment_analysis(self, transcription):
-        return self.summary_section(
-            [
-                {
-                    "role": "system",
-                    "content": "As an AI with expertise in language and emotion analysis, "
-                               "your task is to analyze the sentiment of the following text. "
-                               "Please consider the overall tone of the discussion, "
-                               "the emotion conveyed by the language used, and the context in which words and "
-                               "phrases are used. Indicate whether the sentiment is generally positive, negative, "
-                               "or neutral, and provide brief explanations for your analysis where possible."
-                },
-                {
-                    "role": "user",
-                    "content": transcription
-                }
-            ]
-        )
-
-    def summarise_meeting(self, transcription) -> dict:
-        abstract_summary = self.abstract_summary_extraction(transcription)
-        key_points = self.key_points_extraction(transcription)
-        action_items = self.action_item_extraction(transcription)
-        sentiment = self.sentiment_analysis(transcription)
-        return {
-            'abstract_summary': abstract_summary,
-            'key_points': key_points,
-            'action_items': action_items,
-            'sentiment': sentiment
-        }
+        self.rag = RAG(self.file_manager, self.open_ai_client)
+        self.asr = ASR(self.open_ai_client)
 
     def add_audio_meeting_transcript_document(self, file_path: str):
         """from path"""
         # assert False  # TODO save transcript as a txt file
-        transcription = self.transcribe_audio_file(file_path)
-        summary = self.summarise_meeting(transcription)['abstract_summary']  # TODO just using the abstract for now
+        transcription = self.asr.transcribe_audio_file(file_path)
+        summary = self.rag.summarise_meeting(transcription)['abstract_summary']  # TODO just using the abstract for now
         save_transcript_file_path = self.file_manager.save_text_file(summary)
-        self._add_doc(summary, save_transcript_file_path)
+        self.rag.add_document(summary, save_transcript_file_path)
+        self.file_manager.save(self.rag.vdb_index, self.rag.link_db)
 
     def add_text_document(self, file_path: str):
         """from path"""
         with open(file_path, "r") as file:
             text = str(file.read())
-        self._add_doc(text, file_path)
+        self.rag.add_document(text, file_path)
+        self.file_manager.save(self.rag.vdb_index, self.rag.link_db)
 
-    def _add_doc(self, text: str, file_path: str):
-        embedding = self.embed_text(text)
-        self.add_to_db(embedding, file_path)
-
-    def embed_text(self, text: str) -> np.ndarray:
-        model_name = "text-embedding-3-small"  # allows for dim def (unlike ada-002)
-        response = self.open_ai_client.embeddings.create(
-            input=text,
-            model=model_name,
-            dimensions=self.n_dimensions
-        )
-        return np.array(response.data[0].embedding)
-
-    def get_closest_docs(self, query: str, k=3):
-        embedding = self.embed_text(query)
-        distances, indexes = self.get_closest_indexes(embedding, k)
-        print(indexes)
-        # 1:40 am, im going to bed
+    def query(self, query_text: str):
+        return self.rag.query(query_text)
 
 
-t = Thingo(10)
+
+t = Thingo(10)  # need a metadatafile
 print("Transcribing:")
-# t.add_audio_meeting_transcript_document("en-US_AntiBERTa_for_word_boosting_testing.wav")
+# t.add_audio_meeting_transcript_document("data/audio_recordings/en-US_AntiBERTa_for_word_boosting_testing.wav")
 # t.add_to_db(t.embed_text("Pizza hut"))
 # t.save_db()
 
-transcription = t.transcribe_audio_file("data/audio_recordings/en-US_AntiBERTa_for_word_boosting_testing.wav")
+transcription = t.asr.transcribe_audio_file("data/audio_recordings/en-US_AntiBERTa_for_word_boosting_testing.wav")
 print(transcription)
+
 
 # em = t.embed_text(transcription)
 
-print()
-print("Num embeddings saved: ", t.vdb_index.ntotal)
-print()
+# print()
+# print("Num embeddings saved: ", t.rag.vdb_index.ntotal)
+# print()
+
+print(t.query("What does the llm do?"))
+
+
+exit()
+exit()
 
 for i in ["pizza is tasty", "chatgpt is an llm used to design proteins", "protein"]:
-    em = t.embed_text(i)
-    print(t.get_closest_indexes(em, 1))
+    print(t.query(i))
+    # em = t.rag.embed_text(i)
+    # print(t.rag.get_closest_indexes(em, 1))
+
+# t.file_manager.save(t.rag.vdb_index, t.rag.link_db)
 
 # ids = t.vdb_index.reconstruct_n(0, t.vdb_index.ntotal)
 # print("All IDs:", ids)

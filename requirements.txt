@@ -3,4 +3,5 @@ typing
 bidict
 openai
 faiss-cpu
+streamlit
 python-dotenv
