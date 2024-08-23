@@ -4,7 +4,6 @@ import faiss
 from openai import OpenAI
 from typing import Union
 import numpy as np
-from bidict import bidict
 
 from file_manager import FileManager
 from RAG import RAG
