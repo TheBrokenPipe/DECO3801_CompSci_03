@@ -35,6 +35,8 @@ class Thingo:
         #     tmp_file.write(uploaded_file.read())
         #     tmp_file_path = tmp_file.name
         transcription = self.asr.transcribe_audio(uploaded_file)
+        self.rag.extract_objects(transcription)
+        exit()
         summary = self.rag.summarise_meeting(transcription)['abstract_summary']  # TODO just using the abstract for now
         save_transcript_file_path = self.file_manager.save_text_file(summary)
         self.rag.add_document(summary, save_transcript_file_path)

@@ -6,6 +6,12 @@ load_dotenv()
 
 
 t = Thingo(10)  # need a metadatafile
+
+with open("data/saved_docs/file_test.txt", 'r') as f:
+    t.rag.extract_objects(f.read())
+exit()
+
+
 print("Transcribing:")
 # t.add_audio_meeting_transcript_document("data/audio_recordings/en-US_AntiBERTa_for_word_boosting_testing.wav")
 # t.add_to_db(t.embed_text("Pizza hut"))
