@@ -7,9 +7,9 @@ load_dotenv()
 
 t = Thingo(10)  # need a metadatafile
 
-with open("data/saved_docs/file_test.txt", 'r') as f:
-    t.rag.extract_objects(f.read())
-exit()
+# with open("data/saved_docs/file_test.txt", 'r') as f:
+#     t.rag.extract_objects(f.read())
+# exit()
 
 
 print("Transcribing:")
@@ -17,9 +17,9 @@ print("Transcribing:")
 # t.add_to_db(t.embed_text("Pizza hut"))
 # t.save_db()
 
-transcription = t.asr.transcribe_audio_file("data/audio_recordings/en-US_AntiBERTa_for_word_boosting_testing.wav")
+transcription = t.asr.transcribe_audio_file("data/audio_recordings/legal.mp3")
 print(transcription)
-
+print()
 
 # em = t.embed_text(transcription)
 
