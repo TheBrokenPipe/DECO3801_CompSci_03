@@ -76,8 +76,7 @@ class RAG:
                 "content": f"You are an assistant for question-answering tasks. "
                            f"Use the following pieces of retrieved context to answer "
                            f"the question. If you don't know the answer, say that you "
-                           f"don't know. Use three sentences maximum and keep the "
-                           f"answer concise. \n\n"
+                           f"don't know. Do not include any general information unless neccisary\n\n"
                            f"{context}"
             },
             {
