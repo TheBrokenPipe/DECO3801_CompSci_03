@@ -1,7 +1,3 @@
-# import sys
-# import os
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 # an example page
 import streamlit as st
 from manager import Thingo
@@ -58,15 +54,15 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # uploading files
-uploadForm = st.form("uploadform", clear_on_submit=True)
-
-upload1, upload2 = uploadForm.columns(2)
+upload1, upload2 = st.columns(2)
 #  - uploading audio files
 uploaded_audio = upload1.file_uploader(
     label="Upload meeting transcription",
     accept_multiple_files=True,
     type=list(AUDIO_TYPES)
 ) 
+for uploaded_audio in uploaded_audio:
+    send_audio(uploaded_audio)
 
 #  - uploading supporting files
 supporting_docs = upload2.file_uploader(
@@ -74,15 +70,8 @@ supporting_docs = upload2.file_uploader(
     accept_multiple_files=True,
     type=list(SUPPORTING_MEDIA_TYPES)
 )
-
-submitFiles = uploadForm.form_submit_button("Upload audio and documents")
-
-if submitFiles:
-    for uploaded_audio in uploaded_audio:
-        send_audio(uploaded_audio)
-
-    for doc in supporting_docs:
-        send_doc(doc)
+for doc in supporting_docs:
+    send_doc(doc)
 
 # Display chat messages from history on app rerun
 for message in get_chat_history():

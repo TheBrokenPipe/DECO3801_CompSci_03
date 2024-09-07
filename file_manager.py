@@ -41,7 +41,7 @@ class FileManager:
             return None
 
     def save_text_file(self, text: str) -> str:
-        file_path = "./data/saved_docs/file_test.txt"
+        file_path = "data/saved_docs/file_test.txt"
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(text)
         return file_path
