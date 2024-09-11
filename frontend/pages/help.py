@@ -1,3 +1,5 @@
+import streamlit as st
+
 col1, col2 = st.columns([3, 1], gap = "large", vertical_alignment="center")
 
 with col1:
