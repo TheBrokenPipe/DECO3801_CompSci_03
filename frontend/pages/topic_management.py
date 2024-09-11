@@ -1,4 +1,10 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# an example page
 import streamlit as st
+from interface import server, Topic
 
 
 def header():
@@ -9,3 +15,13 @@ def header():
 
 
 header()
+
+topicHeader1, topicHeader2 = st.columns(2)
+topicHeader1.write("Topic Name")
+topicHeader2.write("Last Modified")
+
+for topic in server.get_topics():
+    topicContainer = st.container(border=True)
+    topicContainer1, topicContainer2 = topicContainer.columns(2)
+    topicContainer1.write(topic.get_name())
+    topicContainer2.write(topic.get_modified_time())
