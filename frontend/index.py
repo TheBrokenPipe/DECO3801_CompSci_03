@@ -4,12 +4,13 @@
 
 # an example page
 import streamlit as st
-from manager import Thingo
-from dotenv import load_dotenv
+# from manager import Thingo
+from interface import *
+# from dotenv import load_dotenv
 
-load_dotenv()
+# load_dotenv()
 
-manager = Thingo(10)
+# manager = Thingo(10)
 
 
 # retrieving stuff from backend and add to history
@@ -46,6 +47,21 @@ def send_doc(doc):
 # role is user or assistant - also adds to history
 def send_message(content):
     st.session_state.messages.append({"role": "user", "content": content})
+
+user = server.get_users()[1]
+chats = user.get_chats()
+
+chat_names = []
+for chat in chats:
+    chat_names.append(chat.get_topics()[0].get_name())
+
+for name in chat_names:
+    st.sidebar.write(name)
+
+# add_selectbox = st.sidebar.selectbox(
+    # "Which chat?",
+    # tuple(chat_names)
+# )
 
 
 # constants
