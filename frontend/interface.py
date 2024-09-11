@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import List
 import datetime
 
 class Server:
@@ -177,9 +178,12 @@ class User:
     def get_accessible_topics(this) -> list[Topic]:
         return this.topics.copy()
 
+    def __str__(this) -> str:
+        return this.name
+
 class Chat:
     def __init__(this, user: User, topics: list[Topic]) -> None:
-        this.user = User
+        this.user = user
         this.topics = topics.copy()
         this.messages = []
         this.summary = "Summary for all meetings in all selected topics..."
@@ -199,7 +203,9 @@ class Chat:
 
     def query(this, message: Message) -> Message:
         this.messages.append(message)
-        return Message(...)
+        resp = Message(User("ChatBot", ""), "AI response haha.")
+        this.messages.append(resp)
+        return resp
 
     def get_summary(this) -> str:
         return this.summary
@@ -207,10 +213,13 @@ class Chat:
     def get_action_items(this) -> list[str]:
         return this.action_items.copy()
 
+    def __str__(this) -> str:
+        return this.user.get_name() + "'s chat"
+
 class Message:
     def __init__(this, sender: User, text: str) -> None:
         this.sender = sender
-        this.text = str
+        this.text = text
         this.time = datetime.datetime.now()
 
     def get_sender(this) -> User:
@@ -221,6 +230,9 @@ class Message:
 
     def get_text(this) -> str:
         return this.text
+
+    def __str__(this) -> str:
+        return this.sender.get_name() + ": " + this.text
 
 # def updateSummary(currentSummary, actionItems):
     # print("Current summary is: " + currentSummary)
@@ -274,3 +286,8 @@ chat = Chat(user, [topic])
 user.add_chat(chat)
 chat2 = Chat(user, [topic2])
 user.add_chat(chat2)
+
+chat.query(Message(chat.get_user(), "What's my name?"))
+chat.query(Message(chat.get_user(), "How are you?"))
+chat2.query(Message(chat.get_user(), "How much money did we get?"))
+chat2.query(Message(chat.get_user(), "When is this due?"))

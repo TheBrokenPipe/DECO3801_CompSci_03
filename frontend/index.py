@@ -55,8 +55,18 @@ chat_names = []
 for chat in chats:
     chat_names.append(chat.get_topics()[0].get_name())
 
-for name in chat_names:
-    st.sidebar.write(name)
+def btn_click(index):
+    for message in chats[index].get_messages():
+        # print(message.get_sender())
+        with st.chat_message(message.get_sender().get_name()):
+        # with st.chat_message("Me"):
+            st.markdown(message.get_text())
+
+for i in range(len(chat_names)):
+    st.sidebar.button(chat_names[i], on_click=btn_click, args=[i])
+
+
+
 
 # add_selectbox = st.sidebar.selectbox(
     # "Which chat?",
