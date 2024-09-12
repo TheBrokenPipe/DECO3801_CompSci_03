@@ -1,10 +1,11 @@
+# allowing to work with the intergace in parent directory
 import sys
 import os
-import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# an example page
+# other imports
 import streamlit as st
+import datetime
 from interface import server, Topic
 
 
@@ -33,4 +34,4 @@ for topic in server.get_topics():
     )
     topicContainer.button(key=topic.get_name(), label="edit")
 
-st.button(label="Create new Topic")
+st.button(key="createLabelButton", label="Create new Topic")
