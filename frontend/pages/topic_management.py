@@ -1,5 +1,6 @@
 import sys
 import os
+import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # an example page
@@ -24,4 +25,10 @@ for topic in server.get_topics():
     topicContainer = st.container(border=True)
     topicContainer1, topicContainer2 = topicContainer.columns(2)
     topicContainer1.write(topic.get_name())
-    topicContainer2.write(topic.get_modified_time())
+    topicContainer2.write(
+        datetime.datetime.strftime(
+            topic.get_modified_time(),
+            "%d/%m/%y"
+        )
+    )
+    topicContainer.button(key=topic.get_name(), label="edit")
