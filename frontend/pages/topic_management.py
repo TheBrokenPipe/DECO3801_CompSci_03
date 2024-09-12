@@ -32,3 +32,5 @@ for topic in server.get_topics():
         )
     )
     topicContainer.button(key=topic.get_name(), label="edit")
+
+st.button(label="Create new Topic")
