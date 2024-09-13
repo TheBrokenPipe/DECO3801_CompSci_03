@@ -8,7 +8,7 @@ class Server:
         this.users = []
         this.meetings = []
         this.chats = []
-        this.create_user("ChatBot", "")
+        this.create_user("assistant", "")
 
     def create_user(this, name: str, password: str) -> User | None:
         for user in this.users:
@@ -20,6 +20,12 @@ class Server:
 
     def get_users(this) -> list[User]:
         return this.users.copy()
+
+    def get_user(this, name: str) -> User | None:
+        for user in this.users:
+            if user.get_name() == name:
+                return user
+        return None
 
     def upload_meeting(this, data: bytes, filename: str, name: str, date: datetime.datetime, attendees: list[User], callback: callable) -> Meeting:
         result = Meeting(data, filename, name, date, attendees, callback)
@@ -203,7 +209,7 @@ class Chat:
 
     def query(this, message: Message) -> Message:
         this.messages.append(message)
-        resp = Message(User("ChatBot", ""), "AI response haha.")
+        resp = Message(User("assistant", ""), "You asked: " + message.get_text())
         this.messages.append(resp)
         return resp
 
@@ -264,7 +270,7 @@ server = Server()
 users = server.get_users()
 user = None
 if len(users) < 2:
-    user = server.create_user("TestUser", "p@ssword")
+    user = server.create_user("user", "p@ssword")
 else:
     user = users[1]
 
