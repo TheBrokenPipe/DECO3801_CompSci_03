@@ -4,5 +4,6 @@ bidict
 openai
 faiss-cpu
 streamlit
+streamlit-extras
 # langchain
 python-dotenv
