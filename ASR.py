@@ -68,6 +68,17 @@ class ASR:
         return f'{{"speaker":"{speaker}","start_time":{start},"end_time":{end},"text":"{text}"}}'
 
 
+    def jsonl_to_txt(self, jsonl: str) -> str:
+        segments = jsonl.split('\r\n')
+        transcript = "\r\n".join(self.segment_to_txt(segment) for segment in segments)
+        return transcript
+        
+        
+    def segment_to_txt(self, jsonl: str) -> str:
+        segment = json.loads(jsonl)
+        return f'{segment["speaker"]}: {segment["text"]}'
+
+
     def whisperx_transcribe(self, device, audio):
         batch_size = 8 
         compute_type = "float16" 
