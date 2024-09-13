@@ -7,7 +7,12 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import streamlit as st
 import datetime
 import random
-from interface import server, Server, chat
+from interface import *
+
+if "current_chat" not in st.session_state:
+    st.session_state["current_chat"] = 0
+
+chat = server.get_user("user").get_chats()[st.session_state["current_chat"]]
 
 col1, col2 = st.columns(2)
 
