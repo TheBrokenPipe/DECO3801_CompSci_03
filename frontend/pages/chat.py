@@ -1,6 +1,5 @@
 import streamlit as st
 from interface import *
-from streamlit_extras.switch_page_button import switch_page
 
 def btn_click(index):
     st.session_state["current_chat"] = index
