@@ -6,3 +6,4 @@ faiss-cpu
 streamlit
 # langchain
 python-dotenv
+git+https://github.com/Hasan-Naseer/whisperX.git@caa7121
