@@ -59,4 +59,4 @@ if chat_input:
     st.chat_message(resp.get_sender().get_name()).markdown(resp.get_text())
 
 if want_summary:
-    switch_page("summary")
+    st.switch_page(st.Page("pages/summary.py", title="summary"))
