@@ -1,5 +1,6 @@
 import streamlit as st
 from interface import *
+from index import pages
 
 def btn_click(index):
     st.session_state["current_chat"] = index
@@ -58,4 +59,4 @@ if chat_input:
     st.chat_message(resp.get_sender().get_name()).markdown(resp.get_text())
 
 if want_summary:
-    st.switch_page(st.Page("pages/summary.py", title="summary"))
+    st.switch_page(pages["summary"])
