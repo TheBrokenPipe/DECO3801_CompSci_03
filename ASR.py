@@ -60,30 +60,29 @@ class ASR:
 
         diarized = self.whisperx_diarize(device, audio, aligned)
 
-        transcript = '\n'.join(self.format_jsonl(segment) for segment in diarized['segments'])
+        transcript = '\n'.join(self.seg_to_jsonl(segment) for segment in diarized['segments'])
 
         return transcript
         
-    def format_jsonl(self, segment) -> str:
+    def seg_to_jsonl(self, segment) -> str:
         """Format transcript segment as JSONL."""
         text = segment["text"].strip()
         start = segment["start"]
         end = segment["end"]
         speaker = "UNKNOWN_SPEAKER" if not "speaker" in segment else segment["speaker"]
         return f'{{"speaker":"{speaker}","start_time":{start},"end_time":{end},"text":"{text}"}}'
-
+        
+    def seg_to_txt(self, segment) -> str:
+        """Format transcript segment as plain text."""
+        text = segment["text"].strip()
+        speaker = "UNKNOWN_SPEAKER" if not "speaker" in segment else segment["speaker"]
+        return f'{speaker}: {text}'
 
     def jsonl_to_txt(self, jsonl: str) -> str:
         """Convert JSONL transcript to basic transcript with speaker labels."""
-        segments = jsonl.split('\n')
-        transcript = "\n".join(self.segment_to_txt(segment) for segment in segments)
+        segments = (json.loads(seg) for seg in jsonl.split('\n'))
+        transcript = "\n".join(self.seg_to_txt(segment) for segment in segments)
         return transcript
-        
-        
-    def segment_to_txt(self, jsonl: str) -> str:
-        segment = json.loads(jsonl)
-        return f'{segment["speaker"]}: {segment["text"]}'
-
 
     def whisperx_transcribe(self, device, audio):
         batch_size = 8 
