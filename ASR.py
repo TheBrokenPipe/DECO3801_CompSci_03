@@ -56,7 +56,7 @@ class ASR:
 
         diarized = self.whisperx_diarize(device, audio, aligned)
 
-        transcript = '\r\n'.join(self.format_jsonl(segment) for segment in diarized['segments'])
+        transcript = '\n'.join(self.format_jsonl(segment) for segment in diarized['segments'])
 
         return transcript
         
@@ -69,8 +69,8 @@ class ASR:
 
 
     def jsonl_to_txt(self, jsonl: str) -> str:
-        segments = jsonl.split('\r\n')
-        transcript = "\r\n".join(self.segment_to_txt(segment) for segment in segments)
+        segments = jsonl.split('\n')
+        transcript = "\n".join(self.segment_to_txt(segment) for segment in segments)
         return transcript
         
         
