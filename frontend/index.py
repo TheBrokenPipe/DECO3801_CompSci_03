@@ -13,7 +13,12 @@ file_list = [
 ]
 # Create a list with pages
 page_list = []  # list of pages to be used to set up navigation
-pages = {}  # dictionary of pages to use when navigating
+
+# pages: a Dictionary of pages to use when navigating
+#   Key: name of page in /pages
+#   Value: a st.Page object for the relevant page
+pages = {}
+
 for file in file_list:
     # Create a readable name by removing underscores and the file extension
     file_name = file.replace('.py', '')
