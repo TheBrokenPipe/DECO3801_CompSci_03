@@ -51,6 +51,14 @@ class ASR:
 
     def transcribe_audio_file_whisperx(self, file_path: str) -> str:
         """Create JSONL transcript with speaker diarization of audio from file path."""
+        diarized = self.transcribe_audio_file_whisperx(file_path)
+
+        transcript = self.transcript_to_jsonl(diarized)
+
+        return transcript
+
+    def transcribe_audio_file_whisperx_raw(self, file_path: str):
+        """Create transcript with speaker diarization of audio from file path."""
         device = "cuda" if torch.cuda.is_available() else "cpu"
         audio = whisperx.load_audio(file_path)
 
@@ -60,11 +68,7 @@ class ASR:
 
         diarized = self.whisperx_diarize(device, audio, aligned)
 
-        segments = (self.seg_to_jsonl(seg) for seg in diarized['segments'])
-
-        transcript = '\n'.join(segments)
-
-        return transcript
+        return diarized
 
     def seg_to_jsonl(self, segment) -> str:
         """Format transcript segment as JSONL."""
@@ -79,6 +83,10 @@ class ASR:
         text = segment["text"].strip()
         speaker = "UNKNOWN_SPEAKER" if not "speaker" in segment else segment["speaker"]
         return f'{speaker}: {text}'
+
+    def transcript_to_jsonl(self, transcript):
+        segments = (self.seg_to_jsonl(seg) for seg in transcript['segments'])
+        return '\n'.join(segments)
 
     def jsonl_to_txt(self, jsonl: str) -> str:
         """Convert JSONL transcript to basic transcript with speaker labels."""
