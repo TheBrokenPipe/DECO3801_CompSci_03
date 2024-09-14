@@ -1,7 +1,7 @@
 from openai import OpenAI
 import torch
 import whisperx
-import gc 
+import gc
 import tempfile
 import json
 
@@ -51,7 +51,7 @@ class ASR:
 
     def transcribe_audio_file_whisperx(self, file_path: str) -> str:
         """Create JSONL transcript with speaker diarization of audio from file path."""
-        device = "cuda" if torch.cuda.is_available() else "cpu" 
+        device = "cuda" if torch.cuda.is_available() else "cpu"
         audio = whisperx.load_audio(file_path)
 
         base_transcription = self.whisperx_transcribe(device, audio)
@@ -60,10 +60,12 @@ class ASR:
 
         diarized = self.whisperx_diarize(device, audio, aligned)
 
-        transcript = '\n'.join(self.seg_to_jsonl(segment) for segment in diarized['segments'])
+        segments = (self.seg_to_jsonl(seg) for seg in diarized['segments'])
+
+        transcript = '\n'.join(segments)
 
         return transcript
-        
+
     def seg_to_jsonl(self, segment) -> str:
         """Format transcript segment as JSONL."""
         text = segment["text"].strip()
@@ -71,7 +73,7 @@ class ASR:
         end = segment["end"]
         speaker = "UNKNOWN_SPEAKER" if not "speaker" in segment else segment["speaker"]
         return f'{{"speaker":"{speaker}","start_time":{start},"end_time":{end},"text":"{text}"}}'
-        
+
     def seg_to_txt(self, segment) -> str:
         """Format transcript segment as plain text."""
         text = segment["text"].strip()
@@ -81,35 +83,40 @@ class ASR:
     def jsonl_to_txt(self, jsonl: str) -> str:
         """Convert JSONL transcript to basic transcript with speaker labels."""
         segments = (json.loads(seg) for seg in jsonl.split('\n'))
-        transcript = "\n".join(self.seg_to_txt(segment) for segment in segments)
+        transcript = "\n".join(self.seg_to_txt(segment)
+                               for segment in segments)
         return transcript
 
     def whisperx_transcribe(self, device, audio):
-        batch_size = 8 
-        compute_type = "float16" 
-        model = whisperx.load_model("distil-large-v3", device, compute_type=compute_type)
+        batch_size = 8
+        compute_type = "float16"
+        model = whisperx.load_model(
+            "distil-large-v3", device, compute_type=compute_type)
         result = model.transcribe(audio, batch_size=batch_size)
         del model
         gc.collect()
         torch.cuda.empty_cache()
         return result
-    
 
     def whisperx_align(self, device, audio, transcription):
-        model, metadata = whisperx.load_align_model(language_code=transcription["language"], device=device)
-        result = whisperx.align(transcription["segments"], model, metadata, audio, device, return_char_alignments=False)
+        model, metadata = whisperx.load_align_model(
+            language_code=transcription["language"],
+            device=device)
+        result = whisperx.align(
+            transcription["segments"], model, metadata, audio, device)
         del model
         gc.collect()
         torch.cuda.empty_cache()
         return result
-        
 
     def whisperx_diarize(self, device, audio, aligned):
-        model = whisperx.DiarizationPipeline(use_auth_token=self.hf_token, device=device)
+        model = whisperx.DiarizationPipeline(
+            use_auth_token=self.hf_token,
+            device=device)
+
         diarize_segments = model(audio)
         result = whisperx.assign_word_speakers(diarize_segments, aligned)
         del model
         gc.collect()
         torch.cuda.empty_cache()
         return result
-        
