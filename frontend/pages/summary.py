@@ -14,6 +14,10 @@ if "current_chat" not in st.session_state:
 
 chat = server.get_user("user").get_chats()[st.session_state["current_chat"]]
 
+topicsNames = map(lambda topic: topic.get_name(), chat.get_topics())
+headertxt = " and ".join(topicsNames) + " Summary"
+st.header(headertxt)
+
 col1, col2 = st.columns(2)
 
 with col1:
