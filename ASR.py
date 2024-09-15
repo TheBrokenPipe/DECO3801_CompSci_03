@@ -4,6 +4,7 @@ import whisperx
 import gc
 import tempfile
 import json
+import logging
 import os
 from pathlib import Path
 
@@ -21,7 +22,8 @@ class ASR:
         self.asr = "WhisperX"
         self.hf_token = hf_token
         self.cache_dir = ".cache"
-        os.makedirs(self.cache_dir, exist_ok = True)
+        os.makedirs(self.cache_dir, exist_ok=True)
+        self.logger = logging.getLogger(__name__)
 
     def transcribe_audio_file(self, file_path: str) -> str:
         """Transcribe audio from file path."""
@@ -107,10 +109,18 @@ class ASR:
         return transcript
 
     def whisperx_transcribe(self, device, audio):
-        batch_size = 8
-        compute_type = "float16"
-        model = whisperx.load_model(
-            "distil-large-v3", device, compute_type=compute_type)
+        if device == "cuda":
+            batch_size = 10
+            compute_type = "float16"
+            model = whisperx.load_model(
+                "distil-large-v3", device, compute_type=compute_type)
+        else:
+            threads = os.cpu_count()
+            batch_size = 8
+            compute_type = "int8"
+            torch.set_num_threads(threads)
+            model = whisperx.load_model(
+                "distil-large-v3", device, compute_type=compute_type, threads=threads)
         result = model.transcribe(audio, batch_size=batch_size)
         del model
         gc.collect()
