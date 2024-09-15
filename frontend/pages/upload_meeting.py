@@ -4,14 +4,15 @@
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import streamlit as st
-
+from index import pages
      
 col1, col2 = st.columns([6, 1], gap = "large", vertical_alignment="center")
 with col1:
     st.button('← Back')
 
 with col2:
-    st.button('Help')
+    if st.button('Help'):
+        st.switch_page(pages["help"])
 
 st.write('Welcome! To start uploading your meeting, please give the meeting a unique name and upload the transcript/recording from your computer')
 
@@ -27,7 +28,8 @@ with col1:
     st.write("")
 
 with col2:
-    st.button("Next", on_click=lambda: st.page_link("upload_meeting2.py"))
+    if st.button("Next"):
+        st.switch_page(pages["upload_meeting2"])
 
 # if st.button("Next", key = "next_buttonB"):
 #         st.session_state.page = "upload_page2"
