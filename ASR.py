@@ -4,6 +4,8 @@ import whisperx
 import gc
 import tempfile
 import json
+import os
+from pathlib import Path
 
 
 class ASR:
@@ -18,6 +20,8 @@ class ASR:
         """Initialise an ASR instance using WhisperX."""
         self.asr = "WhisperX"
         self.hf_token = hf_token
+        self.cache_dir = ".cache"
+        os.makedirs(self.cache_dir, exist_ok = True)
 
     def transcribe_audio_file(self, file_path: str) -> str:
         """Transcribe audio from file path."""
@@ -51,7 +55,14 @@ class ASR:
 
     def transcribe_audio_file_whisperx(self, file_path: str) -> str:
         """Create JSONL transcript with speaker diarization of audio from file path."""
-        diarized = self.transcribe_audio_file_whisperx(file_path)
+        cache_file = self.cache_dir / (Path(file_path).stem + ".json")
+        try:
+            with open(cache_file, 'r') as file:
+                diarized = json.load(file)
+        except FileNotFoundError:
+            diarized = self.transcribe_audio_file_whisperx_raw(file_path)
+            with open(cache_file, "w", encoding="utf-8") as file:
+                json.dump(diarized, file)
 
         transcript = self.transcript_to_jsonl(diarized)
 
