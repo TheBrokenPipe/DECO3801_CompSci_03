@@ -1,11 +1,14 @@
 import streamlit as st
+from index import pages
 
 col1, col2 = st.columns([6, 1], gap = "large", vertical_alignment="center")
 with col1:
-    st.button('← Back')
+    if st.button('← Back'):
+        st.switch_page(pages["upload_meeting"])
 
 with col2:
-    st.button('Help')
+    if st.button('Help'):
+        st.switch_page(pages["help"])
 
 st.write('Are there any text documents that are important context for this meeting? Please upload them here')
 
