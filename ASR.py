@@ -5,6 +5,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from time import monotonic
 
 
 class ASR:
@@ -28,7 +29,7 @@ class ASR:
                 json.dump(diarized, file)
 
         segments = (self.seg_to_jsonl(seg) for seg in diarized['segments'])
-        
+
         transcript = '\n'.join(segments)
 
         return transcript
@@ -36,13 +37,30 @@ class ASR:
     def transcribe_audio_file_whisperx_raw(self, file_path: str):
         """Create transcript with speaker diarization of audio from file path."""
         device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        time = monotonic()
         audio = whisperx.load_audio(file_path)
+        duration = monotonic() - time
+        self.logger.info("Loaded audio file in %.3fs - '%s'",
+                         duration, file_path)
 
+        time = monotonic()
         base_transcription = self.whisperx_transcribe(device, audio)
+        duration = monotonic() - time
+        self.logger.info("Transcribed audio file in %.3fs - '%s'",
+                         duration, file_path)
 
+        time = monotonic()
         aligned = self.whisperx_align(device, audio, base_transcription)
+        duration = monotonic() - time
+        self.logger.info("Aligned audio file in %.3fs - '%s'",
+                         duration, file_path)
 
+        time = monotonic()
         diarized = self.whisperx_diarize(device, audio, aligned)
+        duration = monotonic() - time
+        self.logger.info("Diarized audio file in %.3fs - '%s'",
+                         duration, file_path)
 
         return diarized
 
@@ -54,10 +72,9 @@ class ASR:
         speaker = "UNKNOWN_SPEAKER" if not "speaker" in segment else segment["speaker"]
         return f'{{"speaker":"{speaker}","start_time":{start},"end_time":{end},"text":"{text}"}}'
 
-
     def whisperx_transcribe(self, device, audio):
         if device == "cuda":
-            batch_size = 10
+            batch_size = 6
             compute_type = "float16"
             model = whisperx.load_model(
                 "distil-large-v3", device, compute_type=compute_type)
