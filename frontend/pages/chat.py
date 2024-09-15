@@ -27,6 +27,7 @@ with st.sidebar:
 
     with st.expander("Chats", True):
         for i in range(len(chat_names)):
+            # create a button that will change the current chat to the ith chat
             st.sidebar.button(chat_names[i], on_click=btn_click, args=[i])
     st.divider()
     with st.expander("Actions", True):
