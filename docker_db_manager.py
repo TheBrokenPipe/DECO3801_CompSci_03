@@ -17,9 +17,10 @@ client = docker.from_env()
 
 class PG_Manager:
 
-    def __init__(self):
+    def __init__(self, remove_when_done=False):
         self.volume: Volume | None = None
         self.container: Container | None = None
+        self.remove_when_done = remove_when_done
 
     def create_volume(self, verbose=False):
         volume_name = os.getenv("VOLUME_NAME")
@@ -93,7 +94,7 @@ class PG_Manager:
         self.create_container(verbose)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cleanup(remove=True)
+        self.cleanup(remove=self.remove_when_done)
         pass
 
     def __enter__(self):

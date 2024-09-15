@@ -29,7 +29,7 @@ class DB_Manager:
 
             # Create a new table named 'people'
             with conn.cursor() as cur:
-                cur.execute("""
+                cur.execute(f"""
                     CREATE TABLE IF NOT EXISTS people (
                         id SERIAL PRIMARY KEY,
                         first_name TEXT,
@@ -37,12 +37,19 @@ class DB_Manager:
                         age INT,
                         details JSONB[]  -- Storing details as JSON for flexibility
                     );
+                    CREATE TABLE IF NOT EXISTS documents (
+                        id SERIAL PRIMARY KEY,
+                        local_file_path TEXT,
+                        embedding VECTOR({os.getenv('VECTOR_SIZE')})
+                    );
                     CREATE TABLE IF NOT EXISTS key_points (
                         id SERIAL PRIMARY KEY,
+                        document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE ON UPDATE CASCADE,
                         text TEXT
                     );
                     CREATE TABLE IF NOT EXISTS action_items (
                         id SERIAL PRIMARY KEY,
+                        document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE ON UPDATE CASCADE,
                         text TEXT,
                         assigned_people_names TEXT[],  -- Storing list of names as an array
                         due_date TEXT

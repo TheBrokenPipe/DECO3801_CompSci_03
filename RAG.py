@@ -1,82 +1,44 @@
 import faiss
 import numpy as np
+import json
 import os
 from file_manager import FileManager
 from bidict import bidict
 from openai import OpenAI
 from pydantic import BaseModel
-import json
 from datetime import datetime
 
 
-class Relationship(BaseModel):
+class KeyPoint(BaseModel):
     """
-    name: name or title of related person
-    relation: brief description of how this person is related to the main entity
+    text: key / main point and important idea, finding, or topic that are crucial to the essence
     """
-    name: str
-    relation: str
+    text: str
 
 
-class Person(BaseModel):
+class KeyPoints(BaseModel):
     """
-    name: name of person
-    description: brief description of person
-    related_people: list of relations this person has to other people
+    people: list of key points mentioned in text
     """
-    name: str
-    description: str
-    related_people: list[Relationship]
+    key_points: list[KeyPoint]
 
 
-class Date(BaseModel):
-    name: str
-    year: str | None
-    month: str | None
-    day: str | None
-    description: str
-
-
-class Place(BaseModel):
+class ActionItem(BaseModel):
     """
-    name: name of place
-    description: brief description of place
+    text: task, assignment or action that was agreed upon or mentioned as needing to be done.
+    assigned_people_names: list of names of people assigned to this task
+    due_date: date and/or time of when the task should be completed
     """
-    name: str
-    description: str
+    text: str
+    assigned_people_names: list[str]
+    due_date: str
 
 
-class Place(BaseModel):
+class ActionItems(BaseModel):
     """
-    name: name of place
-    description: brief description of place
+    people: list of action items mentioned in text
     """
-    name: str
-    description: str
-
-
-class MiscObjects(BaseModel):
-    name: str
-    instances_from_text: list[str]
-
-
-class ExtractedObjects(BaseModel):
-    people: list[Person]
-    dates: list[Date]
-    places: list[Place]
-    # misc_objects: list[MiscObjects]
-
-
-class ExtractedObjects2(BaseModel):
-    people: list[Person]
-    dates: list[Date]
-    places: list[Place]
-    # misc_objects: list[MiscObjects]
-
-
-
-
-
+    action_items: list[ActionItem]
 
 
 class RAG:
@@ -168,6 +130,32 @@ class RAG:
         )
         return response.choices[0].message.content
 
+    def extract_specific_objects(self, text, model):
+        system_prompt = [
+            {
+                "role": "system",
+                "content": f"You are tasked with finding objects in the text matching the provided model."
+            },
+            {
+                "role": "user",
+                "content": text
+            }
+        ]
+
+        response = self.open_ai_client.beta.chat.completions.parse(
+            model=self.open_ai_text_model,
+            messages=system_prompt,
+            response_format=model,
+        )
+        # print((response.usage.total_tokens/1e6) * 0.150)
+        # print(response.choices[0].message.json())
+        # print(type(response.choices[0].message.json()))
+        # print(json.loads(response.choices[0].message.content))
+        # print(json.dumps(json.loads(response.choices[0].message.content), indent=4))
+        # exit()
+
+        return json.loads(response.choices[0].message.content)
+
     def abstract_summary_extraction(self, transcription):
         return self.llm_completion(
             [
@@ -187,6 +175,7 @@ class RAG:
         )
 
     def key_points_extraction(self, transcription):
+        return self.extract_specific_objects(transcription, KeyPoints)
         return self.llm_completion(
             [
                 {
@@ -205,6 +194,7 @@ class RAG:
         )
 
     def action_item_extraction(self, transcription):
+        return self.extract_specific_objects(transcription, ActionItems)
         return self.llm_completion(
             [
                 {
@@ -242,43 +232,9 @@ class RAG:
         )
 
     def summarise_meeting(self, transcription) -> dict:
-        abstract_summary = self.abstract_summary_extraction(transcription)
-        key_points = self.key_points_extraction(transcription)
-        action_items = self.action_item_extraction(transcription)
-        sentiment = self.sentiment_analysis(transcription)
         return {
-            'abstract_summary': abstract_summary,
-            'key_points': key_points,
-            'action_items': action_items,
-            'sentiment': sentiment
+            'abstract_summary': self.abstract_summary_extraction(transcription),
+            'key_points': self.key_points_extraction(transcription),
+            'action_items': self.action_item_extraction(transcription),
+            # 'sentiment': self.sentiment_analysis(transcription)
         }
-
-    def extract_objects(self, text):
-        system_prompt = [
-            {
-                "role": "system",
-                "content": f"existing classes of objects:\npeople\nevents\nplaces\n\n"
-                           f"find all the instances of the classes in the following text "
-                           f"and create new classes if needed."
-                           f"each class should be in the json format provided:"
-            },
-            {
-                "role": "user",
-                "content": text
-            }
-        ]
-
-        response = self.open_ai_client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
-            messages=system_prompt,
-            response_format=ExtractedObjects,
-        )
-        print((response.usage.total_tokens/1e6) * 0.150)
-        # print(response.choices[0].message.json())
-        # print(type(response.choices[0].message.json()))
-        print(json.loads(response.choices[0].message.content))
-        print(json.dumps(json.loads(response.choices[0].message.content), indent=4))
-
-        exit()
-
-        return response.choices[0].message.content

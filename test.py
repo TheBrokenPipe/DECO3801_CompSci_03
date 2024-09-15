@@ -242,7 +242,7 @@ with PG_Manager() as m:
     m.full_setup(False)
     DB_Manager.full_setup()
 
-    with open("data/file_test.txt", 'r') as f:
+    with open("data/saved_docs/file_test_1724978229.543099", 'r') as f:
         text_data = f.read()
 
     # people = extract_specific_objects(text_data, People)
