@@ -1,7 +1,6 @@
 import torch
 import whisperx
 import gc
-import tempfile
 import json
 import logging
 import os
@@ -13,15 +12,11 @@ class ASR:
     def __init__(self, hf_token: str):
         """Initialise an ASR instance using WhisperX."""
         self.hf_token = hf_token
-        self.cache_dir = ".cache"
+        self.cache_dir = "data/.cache"
         os.makedirs(self.cache_dir, exist_ok=True)
         self.logger = logging.getLogger(__name__)
 
     def transcribe_audio_file(self, file_path: str) -> str:
-        """Transcribe audio from file path."""
-        return self.transcribe_audio_file_whisperx(file_path)
-
-    def transcribe_audio_file_whisperx(self, file_path: str) -> str:
         """Create JSONL transcript with speaker diarization of audio from file path."""
         cache_file = Path(self.cache_dir) / (Path(file_path).stem + ".json")
         try:
@@ -32,7 +27,9 @@ class ASR:
             with open(cache_file, "w", encoding="utf-8") as file:
                 json.dump(diarized, file)
 
-        transcript = self.transcript_to_jsonl(diarized)
+        segments = (self.seg_to_jsonl(seg) for seg in diarized['segments'])
+        
+        transcript = '\n'.join(segments)
 
         return transcript
 
@@ -57,22 +54,6 @@ class ASR:
         speaker = "UNKNOWN_SPEAKER" if not "speaker" in segment else segment["speaker"]
         return f'{{"speaker":"{speaker}","start_time":{start},"end_time":{end},"text":"{text}"}}'
 
-    def seg_to_txt(self, segment) -> str:
-        """Format transcript segment as plain text."""
-        text = segment["text"].strip()
-        speaker = "UNKNOWN_SPEAKER" if not "speaker" in segment else segment["speaker"]
-        return f'{speaker}: {text}'
-
-    def transcript_to_jsonl(self, transcript):
-        segments = (self.seg_to_jsonl(seg) for seg in transcript['segments'])
-        return '\n'.join(segments)
-
-    def jsonl_to_txt(self, jsonl: str) -> str:
-        """Convert JSONL transcript to basic transcript with speaker labels."""
-        segments = (json.loads(seg) for seg in jsonl.split('\n'))
-        transcript = "\n".join(self.seg_to_txt(segment)
-                               for segment in segments)
-        return transcript
 
     def whisperx_transcribe(self, device, audio):
         if device == "cuda":
