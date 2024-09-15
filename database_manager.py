@@ -11,7 +11,7 @@ from pydantic import BaseModel
 class DB_Manager:
 
     @staticmethod
-    def setup_table_structure(verbose=False):
+    def setup_table_structure_old(verbose=False):
         with psycopg.connect(
             host=os.getenv("HOSTNAME"),  # Use 'localhost' since we're connecting to the Docker container
             port=os.getenv("PORT"),  # Port that PostgreSQL is exposed on
@@ -53,6 +53,76 @@ class DB_Manager:
                         text TEXT,
                         assigned_people_names TEXT[],  -- Storing list of names as an array
                         due_date TEXT
+                    );
+                """)
+                conn.commit()
+                if verbose:
+                    print("Tables created successfully.")
+
+    @staticmethod
+    def setup_table_structure(verbose=False):
+        with psycopg.connect(
+            host=os.getenv("HOSTNAME"),  # Use 'localhost' since we're connecting to the Docker container
+            port=os.getenv("PORT"),  # Port that PostgreSQL is exposed on
+            dbname=os.getenv("DB_NAME"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD")
+        ) as conn:
+            if verbose: print("Connected to the PostgreSQL database successfully.")
+
+            # Install the pgvector extension
+            with conn.cursor() as cur:
+                cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+                conn.commit()
+                if verbose: print("pgvector extension installed successfully.")
+
+            # Create a new table named 'people'
+            with conn.cursor() as cur:
+                cur.execute(f"""
+                    CREATE TABLE IF NOT EXISTS meeting (
+                        id SERIAL PRIMARY KEY,
+                        date DATE,
+                        name TEXT,
+                        file_recording TEXT,
+                        file_transcript TEXT,
+                        summary TEXT
+                    );
+                    
+                    CREATE TABLE IF NOT EXISTS key_points (
+                        id SERIAL PRIMARY KEY,
+                        meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                        text TEXT
+                    );
+                    
+                    CREATE TABLE IF NOT EXISTS action_items (
+                        id SERIAL PRIMARY KEY,
+                        meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                        text TEXT
+                    );
+                    
+                    CREATE TABLE IF NOT EXISTS tag (
+                        id SERIAL PRIMARY KEY,
+                        name TEXT
+                    ); 
+                    
+                    CREATE TABLE IF NOT EXISTS meeting_tag (
+                        meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                        tag_id INTEGER REFERENCES tag(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                        PRIMARY KEY (meeting_id, tag_id)
+                    ); 
+                    
+                    CREATE TABLE IF NOT EXISTS document (
+                        id SERIAL PRIMARY KEY,
+                        meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                        metadata JSONB,
+                        text TEXT,
+                        embedding VECTOR({os.getenv('VECTOR_SIZE')})
+                    );
+
+                    CREATE TABLE IF NOT EXISTS chat (
+                        id SERIAL PRIMARY KEY,
+                        filter JSONB,
+                        history JSONB
                     );
                 """)
                 conn.commit()
