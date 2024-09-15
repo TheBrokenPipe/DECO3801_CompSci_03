@@ -1,4 +1,3 @@
-from openai import OpenAI
 import torch
 import whisperx
 import gc
@@ -11,15 +10,8 @@ from pathlib import Path
 
 class ASR:
 
-    def __init__(self, open_ai_client: OpenAI):
-        """Initialise an ASR instance using an OpenAI client."""
-        self.asr = "OpenAI"
-        self.open_ai_asr_model = "whisper-1"
-        self.open_ai_client = open_ai_client
-
     def __init__(self, hf_token: str):
         """Initialise an ASR instance using WhisperX."""
-        self.asr = "WhisperX"
         self.hf_token = hf_token
         self.cache_dir = ".cache"
         os.makedirs(self.cache_dir, exist_ok=True)
@@ -27,37 +19,11 @@ class ASR:
 
     def transcribe_audio_file(self, file_path: str) -> str:
         """Transcribe audio from file path."""
-        if self.asr == "OpenAI":
-            return self.transcribe_audio_file_openai(file_path)
-        elif self.asr == "WhisperX":
-            return self.transcribe_audio_file_whisperx(file_path)
-
-    def transcribe_audio(self, audio_file):
-        """Transcribe audio from data."""
-        if self.asr == "OpenAI":
-            return self.transcribe_audio_openai(audio_file)
-        elif self.asr == "WhisperX":
-            with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-                tmp_file.write(audio_file.read())
-                tmp_file_path = tmp_file.name
-            return self.transcribe_audio_file_whisperx(tmp_file_path)
-
-    def transcribe_audio_openai(self, audio_file):
-        """Transcribe audio from data using OpenAI client."""
-        return self.open_ai_client.audio.transcriptions.create(
-            model=self.open_ai_asr_model,
-            file=audio_file
-        ).text
-
-    def transcribe_audio_file_openai(self, file_path: str) -> str:
-        """Transcribe audio from file path using OpenAI client."""
-        with open(file_path, "rb") as audio_file:
-            transcription = self.transcribe_audio(audio_file)
-        return transcription
+        return self.transcribe_audio_file_whisperx(file_path)
 
     def transcribe_audio_file_whisperx(self, file_path: str) -> str:
         """Create JSONL transcript with speaker diarization of audio from file path."""
-        cache_file = self.cache_dir / (Path(file_path).stem + ".json")
+        cache_file = Path(self.cache_dir) / (Path(file_path).stem + ".json")
         try:
             with open(cache_file, 'r') as file:
                 diarized = json.load(file)
