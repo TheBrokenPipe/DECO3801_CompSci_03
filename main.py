@@ -1,13 +1,29 @@
+import json
+
 from dotenv import load_dotenv
 from manager import Thingo
 from docker_db_manager import PG_Manager
+from database_manager import DB_Manager
 
 load_dotenv()
 
 
-with PG_Manager(remove_when_done=True) as m:
-    t = Thingo(10, pg_manager=m)  # need a metadatafile
-    t.add_text_document("data/saved_docs/ES2016a_transcript.txt")
+# with PG_Manager(remove_when_done=False) as m:
+#     m.full_setup()
+#     DB_Manager.full_setup()
+t = Thingo(10, pg_manager=1)  # need a metadatafile
+data = []
+with open("data/saved_docs/ES2016a_transcript.txt", "r") as f:
+    for line in f:
+        data.append(json.loads(line))
+print(t.rag.identify_speakers(data))
+
+
+# print(data)
+    # exit()
+
+    # print(t.rag.identify_speakers(data))
+    # t.add_text_document("data/saved_docs/ES2016a_transcript.txt")
 
 exit()
 # with open("data/saved_docs/file_test.txt", 'r') as f:

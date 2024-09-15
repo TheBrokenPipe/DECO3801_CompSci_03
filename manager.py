@@ -9,7 +9,6 @@ from RAG import RAG
 from ASR import ASR
 from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
 from docker_db_manager import PG_Manager
-from database_manager import DB_Manager
 
 
 class Thingo:
@@ -23,16 +22,9 @@ class Thingo:
         self.open_ai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
         self.vdb_index: Union[faiss.IndexFlatL2, None] = None
 
-        self.file_manager = FileManager(
-            vector_db_path,
-            link_db_path
-        )
-        self.rag = RAG(self.file_manager, self.open_ai_client)
+        self.rag = RAG(self.open_ai_client)
         self.asr = ASR(self.open_ai_client)
         self.pg_manager = pg_manager
-
-        self.pg_manager.full_setup()
-        DB_Manager.full_setup()
 
     def upload_file_from_streamlit(self, uploaded_file: streamFile):
         time_tag = datetime.now().timestamp()
@@ -69,7 +61,6 @@ class Thingo:
         self.file_manager.save(self.rag.vdb_index, self.rag.link_db)
 
     def add_text_document(self, file_path: str):
-        open("data/saved_docs/ES2016a_transcript.txt")
         """from path"""
         with open(file_path, "r") as file:
             text = str(file.read())

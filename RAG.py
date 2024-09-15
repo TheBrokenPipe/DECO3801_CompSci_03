@@ -8,6 +8,9 @@ from openai import OpenAI
 from pydantic import BaseModel
 from datetime import datetime
 
+open_ai_text_model = "gpt-4o-mini"
+open_ai_embedding_model = "text-embedding-3-small"
+
 
 class KeyPoint(BaseModel):
     """
@@ -41,35 +44,53 @@ class ActionItems(BaseModel):
     action_items: list[ActionItem]
 
 
+class Speaker(BaseModel):
+    """
+    original_name: name of the speaker in the transcript
+    identified_name: name identified from the text
+    """
+    original_name: str
+    identified_name: str
+
+
+class IdentifiedSpeakers(BaseModel):
+    """
+    identified_speakers: list of speakers identified from text
+    """
+    identified_speakers: list[Speaker]
+
+
+
 class RAG:
 
     open_ai_text_model = "gpt-4o-mini"
 
-    def __init__(self, file_manager: FileManager, open_ai_client: OpenAI, n_dimensions: int = 400):
-        self.file_manager = file_manager
+    def __init__(
+            self,
+            open_ai_client: OpenAI,
+            n_dimensions: int = 400
+    ):
         self.open_ai_client = open_ai_client
-
         self.n_dimensions = n_dimensions
 
-        self.vdb_index: faiss.IndexFlatL2
-        self.link_db: bidict
+    def identify_speakers(self, lines: list[dict]) -> list[dict]:
+        """
+        replaced SPEAKER_XX with names if they can be identified.
+        """
+        # print(text)
+        text = "\n".join(f"{line['speaker']}: {line['text']}" for line in lines)
+        id_speakers = IdentifiedSpeakers(**self.extract_specific_objects(text, IdentifiedSpeakers))
+        speaker_dict = {}
+        for speaker in id_speakers.identified_speakers:
+            speaker_dict[speaker.original_name] = speaker.identified_name
 
-        self.vdb_index, self.link_db = self.file_manager.load()
-        if self.vdb_index is None or self.link_db is None:
-            self.init_db()
+        for line in lines:
+            line["speaker"] = speaker_dict.get(line["speaker"], line["speaker"])
 
-    @property
-    def size(self):
-        # print("Num embeddings saved: ", self.vdb_index.ntotal)
-        return self.vdb_index.ntotal
-
-    def init_db(self):
-        assert self.vdb_index is None, "Vector database is already setup"
-        self.vdb_index = faiss.IndexFlatL2(self.n_dimensions)  # L2 distance (Euclidean distance)
-        self.link_db = bidict()
+        return lines
 
     def embed_text(self, text: str) -> np.ndarray:
-        model_name = "text-embedding-3-small"  # allows for dim def (unlike ada-002)
+        model_name = open_ai_embedding_model  # allows for dim def (unlike ada-002)
         response = self.open_ai_client.embeddings.create(
             input=text,
             model=model_name,
@@ -130,7 +151,7 @@ class RAG:
         )
         return response.choices[0].message.content
 
-    def extract_specific_objects(self, text, model):
+    def extract_specific_objects(self, text, model) -> dict:
         system_prompt = [
             {
                 "role": "system",
