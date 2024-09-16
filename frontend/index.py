@@ -9,7 +9,8 @@ file_list = [
     'topic_management.py',
     'transcript_view.py',
     'upload_meeting.py',
-    'upload_meeting2.py'
+    'upload_meeting2.py',
+    'upload_meeting3.py'
 ]
 # Create a list with pages
 page_list = []  # list of pages to be used to set up navigation
