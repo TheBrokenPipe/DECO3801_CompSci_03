@@ -43,7 +43,7 @@ if st.session_state["tried_submit"]:
 
 col1, col2, col3 = st.columns([1, 4, 1], gap="large", vertical_alignment="top")
 with col1:
-    if st.button("← Back", key="previous"):
+    if st.button("Previous", key="previous"):
         st.switch_page(pages["upload_meeting2"])
 
 with col2:
