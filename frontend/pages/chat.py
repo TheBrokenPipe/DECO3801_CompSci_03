@@ -19,6 +19,7 @@ if "current_chat" not in st.session_state:
     st.session_state["current_chat"] = 0
 
 want_upload = None
+want_topic = None
 
 with st.sidebar:
     st.title("Chats")
@@ -29,7 +30,8 @@ with st.sidebar:
             st.sidebar.button(chat_names[i], on_click=btn_click, args=[i], key=str(i))
     st.divider()
     with st.expander("Actions", True):
-        want_upload = st.sidebar.button("Upload meeting")
+        want_upload = st.sidebar.button("Upload Meeting")
+        want_topic = st.sidebar.button("Create Topic")
 
 st.title(chat_names[st.session_state["current_chat"]])
 
@@ -64,3 +66,6 @@ if want_summary:
 
 if want_upload:
     st.switch_page(pages["upload_meeting"])
+
+if want_topic:
+    st.switch_page(pages["create_topic"])
