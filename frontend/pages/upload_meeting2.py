@@ -13,3 +13,11 @@ with col2:
 st.write('Are there any text documents that are important context for this meeting? Please upload them here')
 
 uploaded_file = st.file_uploader("Upload supporting documents", type=['txt'])
+
+col1, col2 = st.columns([6.5, 1], gap = "large", vertical_alignment="top")
+with col1:
+    st.write("")
+
+with col2:
+    if st.button("Next"):
+        st.switch_page(pages["upload_meeting3"])
