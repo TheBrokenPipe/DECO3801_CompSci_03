@@ -5,10 +5,6 @@ from index import pages
 def btn_click(index):
     st.session_state["current_chat"] = index
 
-def upload_meeting():
-    # dummy
-    i = 5
-
 user = server.get_user("user")
 if user is None:
     user = server.create_user("user", "p@ssword")
@@ -22,6 +18,8 @@ for chat in chats:
 if "current_chat" not in st.session_state:
     st.session_state["current_chat"] = 0
 
+want_upload = None
+
 with st.sidebar:
     st.title("Chats")
 
@@ -31,14 +29,14 @@ with st.sidebar:
             st.sidebar.button(chat_names[i], on_click=btn_click, args=[i], key=str(i))
     st.divider()
     with st.expander("Actions", True):
-        st.sidebar.button("Upload meeting", on_click=upload_meeting)
+        want_upload = st.sidebar.button("Upload meeting")
 
 st.title(chat_names[st.session_state["current_chat"]])
 
 # constants
 CHAT_PROMPT = "Ask a question about your meetings"  # TODO: confirm with group
 
-container = st.container(border=True)
+container = st.container(border=True, height=300)
 
 for message in chats[st.session_state["current_chat"]].get_messages():
     container.chat_message(message.get_sender().get_name()).markdown(message.get_text())
@@ -63,3 +61,6 @@ if chat_input:
 
 if want_summary:
     st.switch_page(pages["summary"])
+
+if want_upload:
+    st.switch_page(pages["upload_meeting"])
