@@ -23,20 +23,16 @@ def get_meeting_date():
     return datetime.datetime(2024, 1, 1)
 
 
-def header():
-    leftHeader, centreHeader, rightHeader = st.columns(3)
-    header_back = leftHeader.button("Back", key=random.random())
-    centreHeader.header("Logo")
-    header_help = rightHeader.button("Help", key=random.random())
+leftHeader, centreHeader, rightHeader = st.columns(3)
+header_back = leftHeader.button("Back", key="fsdwe")
+centreHeader.header("Logo")
+header_help = rightHeader.button("Help", key="idjwn")
 
-    if header_back:
-        st.switch_page(pages["chat"])
+if header_back:
+    st.switch_page(pages["chat"])
 
-    if header_help:
-        st.switch_page(pages["help"])
-
-
-header()
+if header_help:
+    st.switch_page(pages["help"])
 
 date_string = datetime.datetime.strftime(get_meeting_date(), "%d/%m/%Y")
 st.header(f"{get_meeting_name()} ({date_string})")
