@@ -5,10 +5,12 @@
 
 import streamlit as st
 from index import pages
-     
+
+want_back = None
+
 col1, col2 = st.columns([6, 1], gap = "large", vertical_alignment="center")
 with col1:
-    st.button('← Back')
+    want_back = st.button('← Back')
 
 with col2:
     if st.button('Help'):
@@ -36,3 +38,6 @@ with col2:
 
 # if st.session_state.page == "upload_page1":
 #     upload_page1()
+
+if want_back:
+    st.switch_page(pages["chat"])
