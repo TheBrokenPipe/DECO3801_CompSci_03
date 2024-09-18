@@ -10,10 +10,10 @@ from time import monotonic
 
 class ASR:
 
-    def __init__(self, hf_token: str):
+    def __init__(self, hf_token: str, cache_dir = "data/.cache"):
         """Initialise an ASR instance using WhisperX."""
         self.hf_token = hf_token
-        self.cache_dir = "data/.cache"
+        self.cache_dir = cache_dir
         os.makedirs(self.cache_dir, exist_ok=True)
         self.logger = logging.getLogger(__name__)
 
