@@ -137,6 +137,7 @@ class RAG:
                            f"Use the following pieces of retrieved context to answer "
                            f"the question. If you don't know the answer, say that you "
                            f"don't know. Do not include any general information unless necessary\n\n"
+                           f"Use three sentences maximum and keep the answer concise. \n\n"
                            f"{context}"
             },
             {
