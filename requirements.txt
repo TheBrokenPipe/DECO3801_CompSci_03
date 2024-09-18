@@ -1,10 +1,12 @@
 numpy
 typing
 bidict
-openai
+openai==1.40.0
 faiss-cpu
 streamlit
 # langchain
 python-dotenv
+docker
+psycopg[binary]
 git+https://github.com/Hasan-Naseer/whisperX.git@caa7121
 streamlit-tags
