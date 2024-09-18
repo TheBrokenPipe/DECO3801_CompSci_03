@@ -1,3 +1,4 @@
+
 import streamlit as st
 base_path = "pages/" 
 file_list = [
@@ -32,3 +33,4 @@ for file in file_list:
 
 pg = st.navigation(page_list, position="hidden")
 pg.run()
+
