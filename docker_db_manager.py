@@ -15,7 +15,7 @@ load_dotenv()
 client = docker.from_env()
 
 
-class PG_Manager:
+class DockerManager:
 
     def __init__(self, remove_when_done=False):
         self.volume: Volume | None = None

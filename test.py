@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 from dotenv import load_dotenv
 from typing import Union
-from docker_db_manager import PG_Manager
+from docker_db_manager import DockerManager
 from database_manager import DB_Manager
 
 load_dotenv()
@@ -238,7 +238,7 @@ def extract_specific_objects(text, model):
     return json.loads(response.choices[0].message.content)
 
 
-with PG_Manager() as m:
+with DockerManager() as m:
     m.full_setup(False)
     DB_Manager.full_setup()
 

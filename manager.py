@@ -8,7 +8,7 @@ from file_manager import FileManager
 from RAG import RAG
 from ASR import ASR
 from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
-from docker_db_manager import PG_Manager
+from docker_db_manager import DockerManager
 
 
 class Thingo:
@@ -17,7 +17,7 @@ class Thingo:
         self, n_dimensions: int = 400,
         vector_db_path: str = "data/databases/index_file.index",
         link_db_path: str = "data/databases/link.json",
-        pg_manager: PG_Manager = None
+        pg_manager: DockerManager = None
     ):
         self.open_ai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
         self.vdb_index: Union[faiss.IndexFlatL2, None] = None

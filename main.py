@@ -2,7 +2,7 @@ import json
 
 from dotenv import load_dotenv
 from manager import Thingo
-from docker_db_manager import PG_Manager
+from docker_db_manager import DockerManager
 from database_manager import DB_Manager
 
 load_dotenv()
