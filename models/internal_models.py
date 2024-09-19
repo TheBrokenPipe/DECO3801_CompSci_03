@@ -8,8 +8,8 @@ warnings.filterwarnings("ignore", message="Field .* has conflict with protected 
 
 class MeetingCreation(BaseModel):
     __db_model__ = Meeting
-    date: datetime
     name: str
+    date: datetime
     file_recording: str
     file_transcript: str
     summary: str

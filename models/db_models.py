@@ -9,8 +9,8 @@ class Meeting(BaseModel):
     __tablename__ = "meeting"
     __primarykey__ = "id"
     id: int
-    date: datetime
     name: str
+    date: datetime
     file_recording: str
     file_transcript: str
     summary: str

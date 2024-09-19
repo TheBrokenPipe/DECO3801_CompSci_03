@@ -43,7 +43,7 @@ container = st.container(border=True, height=300)
 for message in chats[st.session_state["current_chat"]].get_messages():
     container.chat_message(message.get_sender().get_name()).markdown(message.get_text())
 
-col1, col2 = st.columns([18,100]) 
+col1, col2 = st.columns([18, 100])
 
 chat_input = None
 want_summary = None
@@ -69,3 +69,4 @@ if want_upload:
 
 if want_topic:
     st.switch_page(pages["create_topic"])
+
