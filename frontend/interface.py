@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import List
 import datetime
+from ..models import *
+from ..backend.manager import Manager
 
 
 class Server:
@@ -9,7 +11,12 @@ class Server:
         self.users = []
         self.meetings = []
         self.chats = []
-        self.create_user("assistant", "")
+        # self.create_user("assistant", "")
+
+    # TODO George, im just commenting our the user stuff for now
+    #  cause we haven't done nay database/backend stuff for this
+    #  we can add it back in later
+    """
 
     def create_user(self, name: str, password: str) -> User | None:
         for user in self.users:
@@ -18,7 +25,6 @@ class Server:
         result = User(name, password)
         self.users.append(result)
         return result
-
     def get_users(self) -> list[User]:
         return self.users.copy()
 
@@ -27,31 +33,80 @@ class Server:
             if user.get_name() == name:
                 return user
         return None
+    """
+    # def upload_meeting(self, data: bytes, filename: str, name: str, date: datetime.datetime, attendees: list[User], callback: callable) -> Meeting:
+    #     result = Meeting(data, filename, name, date, attendees, callback)
+    #     self.meetings.append(result)
+    #     return result
 
-    def upload_meeting(self, data: bytes, filename: str, name: str, date: datetime.datetime, attendees: list[User], callback: callable) -> Meeting:
-        result = Meeting(data, filename, name, date, attendees, callback)
-        self.meetings.append(result)
-        return result
+    async def get_meetings(self) -> list[Meeting]:
+        # return await Manager.get_all_meetings()  # actual functioning, comment out for faking
 
-    def get_meetings(self) -> list[Meeting]:
-        return self.meetings.copy()
+        return [
+            Meeting(
+                id=1,
+                date=datetime.now(),
+                name="Tagged Meeting",
+                file_recording="SomewhereFilepath",
+                file_transcript="SomewhereElseFilepath",
+                summary="peepeepoopop"
+            ), Meeting(
+                id=2,
+                date=datetime.now(),
+                name="Non-Tagged Meeting",
+                file_recording="Here",
+                file_transcript="There",
+                summary="loopdiloop"
+            ),
+        ]
 
-    def create_topic(self, name: str, meetings: list[Meeting], users: list[User]) -> Topic:
-        result = Topic(name, meetings, users)
-        self.topics.append(result)
-        return result
+    async def create_tag(self, name: str, meetings: list[Meeting]) -> Tag:
+        # return await Manager.create_tag(name, meetings)
 
-    def get_topics(self) -> list[Topic]:
-        return self.topics.copy()
+        return Tag(name=name)
+
+        # new_tag = Tag(name=name)
+        # result = Topic(name, meetings, users)
+        # self.topics.append(result)
+        # return result
+
+    async def add_meetings_to_tag(self, tag: Tag, meetings: Meeting | list[Meeting]):
+        # return await Manager.add_meetings_to_tag(tag, meetings)
+        if isinstance(meetings, Meeting):
+            meetings = [meetings]
+        return [MeetingTag(tag_id=tag.id, meeting_id=meeting.id) for meeting in meetings]
+
+    async def get_all_tag_meetings(self, tag: Tag) -> list[Meeting]:
+        # return await Manager.get_tag_meetings(tag)
+
+        return [
+            Meeting(
+                id=1,
+                date=datetime.now(),
+                name="Tagged Meeting",
+                file_recording="SomewhereFilepath",
+                file_transcript="SomewhereElseFilepath",
+                summary="peepeepoopop"
+            )
+        ]
+
+    async def get_all_tags(self) -> list[Tag]:
+        return await Manager.get_all_tags()
+
+        return [
+            Tag(name="Tag1"),
+            Tag(name="Tag2")
+        ]
 
 
+"""
 class Topic:
     def __init__(self, name: str, meetings: list[Meeting], users: list[User]) -> None:
         self.name = name
         self.meetings = meetings.copy()
         self.users = users.copy()
         self.last_modified = datetime.datetime.now()
-        self.summary = "AI-generated summary for all meeting under self topic..."
+        self.summary = "AI-generated summary for all meeting under this topic..."
         self.action_items = ["Eat", "Sleep", "Die"]
 
         for meeting in self.meetings:
@@ -189,6 +244,7 @@ class User:
     def __str__(self) -> str:
         return self.name
 
+
 class Chat:
     def __init__(self, user: User, topics: list[Topic]) -> None:
         self.user = user
@@ -241,7 +297,7 @@ class Message:
 
     def __str__(self) -> str:
         return self.sender.get_name() + ": " + self.text
-
+"""
 # def updateSummary(currentSummary, actionItems):
     # print("Current summary is: " + currentSummary)
     # print("Current action items are: " + str(actionItems))
@@ -269,33 +325,67 @@ class Message:
 
 server = Server()
 
-users = server.get_users()
-user = None
-if len(users) < 2:
-    user = server.create_user("user", "p@ssword")
-else:
-    user = users[1]
+# users = server.get_users()
+# user = None
+# if len(users) < 2:
+#     user = server.create_user("user", "p@ssword")
+# else:
+#     user = users[1]
 
 def updateSummary(currentSummary, actionItems):
     return (currentSummary, actionItems)
 
-topic = server.create_topic("Executive Meetings", [], [user])
-exec1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Executive Meeting", datetime.datetime.now(), [user], updateSummary)
-exec2 = server.upload_meeting(b'Hello World!', "meeting.txt", "Second Executive Meeting", datetime.datetime.now(), [user], updateSummary)
-topic.add_meeting(exec1)
-topic.add_meeting(exec2)
-topic2 = server.create_topic("Marketing Meetings", [], [user])
-mark1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Marketing Meeting", datetime.datetime.now(), [user], updateSummary)
-mark2 = server.upload_meeting(b'Hello World!', "meeting.txt", "Second Marketing Meeting", datetime.datetime.now(), [user], updateSummary)
-topic2.add_meeting(mark1)
-topic2.add_meeting(mark2)
 
-chat = Chat(user, [topic])
-user.add_chat(chat)
-chat2 = Chat(user, [topic2])
-user.add_chat(chat2)
+async def fake_main():
 
-chat.query(Message(chat.get_user(), "What's my name?"))
-chat.query(Message(chat.get_user(), "How are you?"))
-chat2.query(Message(chat.get_user(), "How much money did we get?"))
-chat2.query(Message(chat.get_user(), "When is self due?"))
+    topic = await server.create_tag("Executive Meetings", [])
+    # exec1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Executive Meeting", datetime.datetime.now(), [user], updateSummary)
+    # exec2 = server.upload_meeting(b'Hello World!', "meeting.txt", "Second Executive Meeting", datetime.datetime.now(), [user], updateSummary)
+    exec1 = Meeting(
+        id=1,
+        date=datetime.now(),
+        name="Tagged Meeting",
+        file_recording="SomewhereFilepath",
+        file_transcript="SomewhereElseFilepath",
+        summary="peepeepoopop"
+    )
+    exec2 = Meeting(
+        id=2,
+        date=datetime.now(),
+        name="Non-Tagged Meeting",
+        file_recording="Here",
+        file_transcript="There",
+        summary="loopdiloop"
+    )
+    await server.add_meetings_to_tag(topic, exec1)
+    await server.add_meetings_to_tag(topic, exec2)
+    topic2 = await server.create_tag("Marketing Meetings", [])
+    # mark1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Marketing Meeting", datetime.datetime.now(), [user], updateSummary)
+    # mark2 = server.upload_meeting(b'Hello World!', "meeting.txt", "Second Marketing Meeting", datetime.datetime.now(), [user], updateSummary)
+    mark1 = Meeting(
+        id=3,
+        date=datetime.now(),
+        name="rweq",
+        file_recording="rewq",
+        file_transcript="wreq",
+        summary="rtw"
+    )
+    mark2 = Meeting(
+        id=4,
+        date=datetime.now(),
+        name="jhf",
+        file_recording="jfhd",
+        file_transcript="fjdhg",
+        summary="dg"
+    )
+    await server.add_meetings_to_tag(topic2, [mark1, mark2])
+
+    # chat = Chat(user, [topic])
+    # user.add_chat(chat)
+    # chat2 = Chat(user, [topic2])
+    # user.add_chat(chat2)
+
+    # chat.query(Message(chat.get_user(), "What's my name?"))
+    # chat.query(Message(chat.get_user(), "How are you?"))
+    # chat2.query(Message(chat.get_user(), "How much money did we get?"))
+    # chat2.query(Message(chat.get_user(), "When is self due?"))
