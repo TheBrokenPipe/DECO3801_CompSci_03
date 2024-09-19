@@ -16,7 +16,7 @@ class Meeting(BaseModel):
     summary: str
 
 
-class KeyPoints(BaseModel):
+class KeyPoint(BaseModel):
     __tablename__ = "key_points"
     __primarykey__ = "id"
     __foreignkeys__ = {
@@ -27,7 +27,7 @@ class KeyPoints(BaseModel):
     text: str
 
 
-class ActionItems(BaseModel):
+class ActionItem(BaseModel):
     __tablename__ = "action_items"
     __primarykey__ = "id"
     __foreignkeys__ = {
@@ -66,7 +66,7 @@ class Document(BaseModel):
     meeting_id: int
     metadata: dict
     text: str
-    embedding: list[float]  # Adjust the VECTOR size dynamically if needed
+    embedding: list[float]
 
 
 class Chat(BaseModel):

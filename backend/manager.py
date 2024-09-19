@@ -9,14 +9,14 @@ from RAG import RAG
 from ASR import ASR
 from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
 from docker_manager import DockerManager
+from ..models import *
+from ..access import *
 
 
-class Thingo:
+class Manager:
 
     def __init__(
         self, n_dimensions: int = 400,
-        vector_db_path: str = "data/databases/index_file.index",
-        link_db_path: str = "data/databases/link.json",
         pg_manager: DockerManager = None
     ):
         self.open_ai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
@@ -25,6 +25,31 @@ class Thingo:
         self.rag = RAG(self.open_ai_client)
         self.asr = ASR(self.open_ai_client)
         self.pg_manager = pg_manager
+
+    @staticmethod
+    async def get_all_meetings() -> list[Meeting]:
+        return await select_many_from_table(Meeting)
+
+    @staticmethod
+    async def get_all_tags() -> list[Tag]:
+        return await select_many_from_table(Tag)
+
+    @staticmethod
+    async def create_tag(name, meetings: list[Meeting]) -> Tag:
+        tag = await insert_into_table(TagCreation(name=name), always_return_list=False)
+        await Manager.add_meetings_to_tag(tag, meetings)
+        return tag
+
+    @staticmethod
+    async def add_meetings_to_tag(tag: Tag, meetings: Meeting | list[Meeting]) -> list[MeetingTag]:
+        if isinstance(meetings, Meeting):
+            return await insert_into_table(MeetingTagCreation(meeting_id=meetings.id, tag_id=tag.id))
+        elif isinstance(meetings, list) and len(meetings):
+            return await insert_into_table([MeetingTagCreation(meeting_id=meeting.id, tag_id=tag.id) for meeting in meetings])
+
+    @staticmethod
+    async def get_tag_meetings(tag: Tag) -> list[Meeting]:
+        return await select_with_joins(tag.id, [Tag, MeetingTag, Meeting])
 
     def upload_file_from_streamlit(self, uploaded_file: streamFile):
         time_tag = datetime.now().timestamp()

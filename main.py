@@ -1,10 +1,9 @@
-import json
 import asyncio
 import sys
 from dotenv import load_dotenv
-from manager import Thingo
-from docker_manager import DockerManager
-from database_manager import DB_Manager
+from backend.manager import Manager
+from backend.docker_manager import DockerManager
+from backend.database_manager import DB_Manager
 
 load_dotenv()
 if sys.platform == "win32":
@@ -17,7 +16,7 @@ with DockerManager(remove_when_done=True) as m:
         asyncio.run(DB_Manager.full_setup(True))
     except Exception as e:
         print(e)
-    t = Thingo(10, pg_manager=m)  # need a metadatafile
+    t = Manager(10, pg_manager=m)  # need a metadatafile
     data = []
     input()
     # with open("data/saved_docs/ES2016a_transcript.txt", "r") as f:

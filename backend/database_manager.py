@@ -3,7 +3,8 @@ import os
 import psycopg
 from psycopg import sql
 from pydantic import BaseModel
-from access import AccessBase
+from access import *
+from models import *
 
 # from dotenv import load_dotenv
 # load_dotenv()
@@ -82,7 +83,7 @@ class DB_Manager:
         if verbose: print("Tables setup successfully.")
 
     @staticmethod
-    def get_action_items():
+    async def get_action_items():
         # Establish a connection to the PostgreSQL database
         with psycopg.connect(
                 host=os.getenv("HOSTNAME"),

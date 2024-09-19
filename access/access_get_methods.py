@@ -62,40 +62,45 @@ async def select_from_table(
 
 
 async def select_many_from_table(
-    model: Type[BaseModelSubClass],
-    values: list[int | str | tuple],
-    key_name: str | tuple = None
+        model: Type[BaseModelSubClass],
+        values: list[int | str | tuple] = None,
+        key_name: str | tuple = None
 ) -> List[BaseModelSubClass]:
     assert issubclass(model, BaseModel), f"Model is not a subclass of BaseModel: {model}"
 
     if key_name is None:
         key_name = model.__primarykey__
 
-    if not isinstance(values, list):
-        values = [values]
+    if values is None:
+        # Select all rows if no values are provided
+        sql = f"SELECT * FROM app.{model.__tablename__};"
+        params = []
+    else:
+        if not isinstance(values, list):
+            values = [values]
 
-    if isinstance(key_name, str):
-        key_name = [key_name]
+        if isinstance(key_name, str):
+            key_name = [key_name]
 
-    assert type(key_name) in [list, tuple], "key_name must be a string, list, or tuple."
+        assert type(key_name) in [list, tuple], "key_name must be a string, list, or tuple."
 
-    if isinstance(key_name, tuple):  # Composite Key
-        assert all(isinstance(pkey, tuple) and len(pkey) == len(key_name) for pkey in values), \
-            "All provided keys must be tuples of the correct length."
+        if isinstance(key_name, tuple):  # Composite Key
+            assert all(isinstance(pkey, tuple) and len(pkey) == len(key_name) for pkey in values), \
+                "All provided keys must be tuples of the correct length."
 
-        placeholder = f"({', '.join(['%s'] * len(key_name))})"
-        placeholders = ', '.join([placeholder] * len(values))
-        params = [item for pkey in values for item in pkey]
-        filter_clause = f"({', '.join(key_name)}) IN ({placeholders})"
-    else:  # Single Key
-        assert all(isinstance(pkey, (int, str)) for pkey in values), \
-            "All provided keys must be int or str for a single primary key."
+            placeholder = f"({', '.join(['%s'] * len(key_name))})"
+            placeholders = ', '.join([placeholder] * len(values))
+            params = [item for pkey in values for item in pkey]
+            filter_clause = f"({', '.join(key_name)}) IN ({placeholders})"
+        else:  # Single Key
+            assert all(isinstance(pkey, (int, str)) for pkey in values), \
+                "All provided keys must be int or str for a single primary key."
 
-        placeholders = ', '.join(['%s'] * len(values))
-        params = values
-        filter_clause = f"{key_name[0]} IN ({placeholders})"
+            placeholders = ', '.join(['%s'] * len(values))
+            params = values
+            filter_clause = f"{key_name[0]} IN ({placeholders})"
 
-    sql = f"SELECT * FROM app.{model.__tablename__} WHERE {filter_clause};"
+        sql = f"SELECT * FROM app.{model.__tablename__} WHERE {filter_clause};"
 
     return await AccessBase.db_fetchall(
         sql,
