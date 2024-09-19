@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from db_models import *
+from .db_models import *
 
 import warnings
 warnings.filterwarnings("ignore", message="Field .* has conflict with protected namespace .*")

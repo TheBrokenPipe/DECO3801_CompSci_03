@@ -20,7 +20,7 @@ async def insert_into_table(objs: BaseModel | list[BaseModel], always_return_lis
     placeholders = ', '.join(['%s'] * len(data_list[0]))
 
     sql = f"""
-        INSERT INTO app.{first_obj.__db_model__.__tablename__} ({columns}) 
+        INSERT INTO {first_obj.__db_model__.__tablename__} ({columns}) 
         VALUES {', '.join([f"({placeholders})" for _ in objs])}
         RETURNING *;
     """

@@ -25,7 +25,7 @@ async def count_from_table(
         value = (value,)
 
     filter_clause = ' AND '.join([f"{k} = %s" for k in key_name])
-    sql = f"SELECT COUNT(*) FROM app.{model.__tablename__} WHERE {filter_clause};"
+    sql = f"SELECT COUNT(*) FROM {model.__tablename__} WHERE {filter_clause};"
 
     return await AccessBase.db_fetchone(
         sql,
@@ -52,7 +52,7 @@ async def select_from_table(
         value = (value,)
 
     filter_clause = ' AND '.join([f"{k} = %s" for k in key_name])
-    sql = f"SELECT * FROM app.{model.__tablename__} WHERE {filter_clause};"
+    sql = f"SELECT * FROM {model.__tablename__} WHERE {filter_clause};"
 
     return await AccessBase.db_fetchone(
         sql,
@@ -73,7 +73,7 @@ async def select_many_from_table(
 
     if values is None:
         # Select all rows if no values are provided
-        sql = f"SELECT * FROM app.{model.__tablename__};"
+        sql = f"SELECT * FROM {model.__tablename__};"
         params = []
     else:
         if not isinstance(values, list):
@@ -100,7 +100,7 @@ async def select_many_from_table(
             params = values
             filter_clause = f"{key_name[0]} IN ({placeholders})"
 
-        sql = f"SELECT * FROM app.{model.__tablename__} WHERE {filter_clause};"
+        sql = f"SELECT * FROM {model.__tablename__} WHERE {filter_clause};"
 
     return await AccessBase.db_fetchall(
         sql,
@@ -122,11 +122,11 @@ def get_join_condition(
 
     for field_name, (fk_table, fk_field) in fk_a.items():
         if fk_table == model_b.__tablename__:
-            return f"INNER JOIN app.{model_b.__tablename__} AS {alias_b} ON {alias_a}.{field_name} = {alias_b}.{fk_field}"
+            return f"INNER JOIN {model_b.__tablename__} AS {alias_b} ON {alias_a}.{field_name} = {alias_b}.{fk_field}"
 
     for field_name, (fk_table, fk_field) in fk_b.items():
         if fk_table == model_a.__tablename__:
-            return f"INNER JOIN app.{model_b.__tablename__} AS {alias_b} ON {alias_b}.{field_name} = {alias_a}.{fk_field}"
+            return f"INNER JOIN {model_b.__tablename__} AS {alias_b} ON {alias_b}.{field_name} = {alias_a}.{fk_field}"
 
     raise Exception(f"No foreign key relationship found between {model_a.__tablename__} and {model_b.__tablename__}")
 
@@ -160,7 +160,7 @@ async def select_with_joins(
         table_aliases.append(alias)
         model_occurrences.append((model, count))
 
-    sql = f"SELECT {table_aliases[-1]}.* FROM app.{start_model.__tablename__} AS {table_aliases[0]}"
+    sql = f"SELECT {table_aliases[-1]}.* FROM {start_model.__tablename__} AS {table_aliases[0]}"
     joins = []
 
     for i in range(len(join_path) - 1):

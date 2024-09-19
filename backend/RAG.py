@@ -2,7 +2,7 @@ import faiss
 import numpy as np
 import json
 import os
-from file_manager import FileManager
+from .file_manager import FileManager
 from bidict import bidict
 from openai import OpenAI
 from pydantic import BaseModel

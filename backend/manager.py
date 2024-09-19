@@ -3,14 +3,16 @@ import faiss
 from openai import OpenAI
 from typing import Union
 from datetime import datetime
+import sys
 
-from file_manager import FileManager
-from RAG import RAG
-from ASR import ASR
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from .file_manager import FileManager
+from .RAG import RAG
+from .ASR import ASR
 from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
-from docker_manager import DockerManager
-from ..models import *
-from ..access import *
+from .docker_manager import DockerManager
+from models import *
+from access import *
 
 
 class Manager:
@@ -23,7 +25,7 @@ class Manager:
         self.vdb_index: Union[faiss.IndexFlatL2, None] = None
 
         self.rag = RAG(self.open_ai_client)
-        self.asr = ASR(self.open_ai_client)
+        self.asr = ASR(os.environ['HF_TOKEN'])
         self.pg_manager = pg_manager
 
     @staticmethod
