@@ -41,26 +41,22 @@ class ASR:
         time = monotonic()
         audio = whisperx.load_audio(file_path)
         duration = monotonic() - time
-        self.logger.info("Loaded audio file in %.3fs - '%s'",
-                         duration, file_path)
+        self.logger.info(f"Loaded audio file in {duration:.3f} - '{file_path}'")
 
         time = monotonic()
         base_transcription = self.whisperx_transcribe(device, audio)
         duration = monotonic() - time
-        self.logger.info("Transcribed audio file in %.3fs - '%s'",
-                         duration, file_path)
+        self.logger.info(f"Transcribed audio file in {duration:.3f}s - '{file_path}'")
 
         time = monotonic()
         aligned = self.whisperx_align(device, audio, base_transcription)
         duration = monotonic() - time
-        self.logger.info("Aligned audio file in %.3fs - '%s'",
-                         duration, file_path)
+        self.logger.info(f"Aligned audio file in {duration:.3f}s - '{file_path}'")
 
         time = monotonic()
         diarized = self.whisperx_diarize(device, audio, aligned)
         duration = monotonic() - time
-        self.logger.info("Diarized audio file in %.3fs - '%s'",
-                         duration, file_path)
+        self.logger.info(f"Diarized audio file in {duration:.3f}s - '{file_path}'")
 
         return diarized
 

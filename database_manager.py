@@ -3,6 +3,7 @@ import os
 import psycopg
 from psycopg import sql
 from pydantic import BaseModel
+from access import AccessBase
 
 # from dotenv import load_dotenv
 # load_dotenv()
@@ -11,151 +12,74 @@ from pydantic import BaseModel
 class DB_Manager:
 
     @staticmethod
-    def setup_table_structure_old(verbose=False):
-        with psycopg.connect(
-            host=os.getenv("HOSTNAME"),  # Use 'localhost' since we're connecting to the Docker container
-            port=os.getenv("PORT"),  # Port that PostgreSQL is exposed on
-            dbname=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD")
-        ) as conn:
-            if verbose: print("Connected to the PostgreSQL database successfully.")
+    async def setup_table_structure(verbose=False):
+        if verbose: print("Starting Table Setup.")
+        # table_exists = await AccessBase.db_fetchone(
+        #     """
+        #     SELECT EXISTS (
+        #         SELECT FROM information_schema.tables
+        #         WHERE table_name = 'document'
+        #     );
+        #     """
+        # )
+        # # Exit if the tables have already been set up
+        # if table_exists:
+        #     if verbose: print("Database tables are already set up.")
+        #     return
 
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_name = 'people'
-                    );
-                """)
-                table_exists = cur.fetchone()[0]
+        await AccessBase.db_execute("CREATE EXTENSION IF NOT EXISTS vector;")
+        if verbose: print("pgvector extension installed successfully.")
 
-            # Exit if the tables have already been set up
-            if table_exists:
-                if verbose: print("Database tables are already set up.")
-                return
+        await AccessBase.db_execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS meeting (
+                id SERIAL PRIMARY KEY,
+                date DATE,
+                name TEXT,
+                file_recording TEXT,
+                file_transcript TEXT,
+                summary TEXT
+            );
 
-            # Install the pgvector extension
-            with conn.cursor() as cur:
-                cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-                conn.commit()
-                if verbose: print("pgvector extension installed successfully.")
+            CREATE TABLE IF NOT EXISTS key_points (
+                id SERIAL PRIMARY KEY,
+                meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                text TEXT
+            );
 
-            # Create a new table named 'people'
-            with conn.cursor() as cur:
-                cur.execute(f"""
-                    CREATE TABLE IF NOT EXISTS people (
-                        id SERIAL PRIMARY KEY,
-                        first_name TEXT,
-                        last_name TEXT,
-                        age INT,
-                        details JSONB[]  -- Storing details as JSON for flexibility
-                    );
-                    CREATE TABLE IF NOT EXISTS documents (
-                        id SERIAL PRIMARY KEY,
-                        local_file_path TEXT,
-                        embedding VECTOR({os.getenv('VECTOR_SIZE')})
-                    );
-                    CREATE TABLE IF NOT EXISTS key_points (
-                        id SERIAL PRIMARY KEY,
-                        document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE ON UPDATE CASCADE,
-                        text TEXT
-                    );
-                    CREATE TABLE IF NOT EXISTS action_items (
-                        id SERIAL PRIMARY KEY,
-                        document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE ON UPDATE CASCADE,
-                        text TEXT,
-                        assigned_people_names TEXT[],  -- Storing list of names as an array
-                        due_date TEXT
-                    );
-                """)
-                conn.commit()
-                if verbose:
-                    print("Tables created successfully.")
+            CREATE TABLE IF NOT EXISTS action_items (
+                id SERIAL PRIMARY KEY,
+                meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                text TEXT
+            );
 
-    @staticmethod
-    def setup_table_structure(verbose=False):
-        with psycopg.connect(
-            host=os.getenv("HOSTNAME"),  # Use 'localhost' since we're connecting to the Docker container
-            port=os.getenv("PORT"),  # Port that PostgreSQL is exposed on
-            dbname=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD")
-        ) as conn:
-            if verbose: print("Connected to the PostgreSQL database successfully.")
+            CREATE TABLE IF NOT EXISTS tag (
+                id SERIAL PRIMARY KEY,
+                name TEXT
+            ); 
 
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_name = 'people'
-                    );
-                """)
-                table_exists = cur.fetchone()[0]
+            CREATE TABLE IF NOT EXISTS meeting_tag (
+                meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                tag_id INTEGER REFERENCES tag(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                PRIMARY KEY (meeting_id, tag_id)
+            ); 
 
-            # Exit if the tables have already been set up
-            if table_exists:
-                if verbose: print("Database tables are already set up.")
-                return
+            CREATE TABLE IF NOT EXISTS document (
+                id SERIAL PRIMARY KEY,
+                meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                metadata JSONB,
+                text TEXT,
+                embedding VECTOR({os.getenv('VECTOR_SIZE')})
+            );
 
-            # Install the pgvector extension
-            with conn.cursor() as cur:
-                cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-                conn.commit()
-                if verbose: print("pgvector extension installed successfully.")
-
-            # Create a new table named 'people'
-            with conn.cursor() as cur:
-                cur.execute(f"""
-                    CREATE TABLE IF NOT EXISTS meeting (
-                        id SERIAL PRIMARY KEY,
-                        date DATE,
-                        name TEXT,
-                        file_recording TEXT,
-                        file_transcript TEXT,
-                        summary TEXT
-                    );
-                    
-                    CREATE TABLE IF NOT EXISTS key_points (
-                        id SERIAL PRIMARY KEY,
-                        meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
-                        text TEXT
-                    );
-                    
-                    CREATE TABLE IF NOT EXISTS action_items (
-                        id SERIAL PRIMARY KEY,
-                        meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
-                        text TEXT
-                    );
-                    
-                    CREATE TABLE IF NOT EXISTS tag (
-                        id SERIAL PRIMARY KEY,
-                        name TEXT
-                    ); 
-                    
-                    CREATE TABLE IF NOT EXISTS meeting_tag (
-                        meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
-                        tag_id INTEGER REFERENCES tag(id) ON DELETE CASCADE ON UPDATE CASCADE,
-                        PRIMARY KEY (meeting_id, tag_id)
-                    ); 
-                    
-                    CREATE TABLE IF NOT EXISTS document (
-                        id SERIAL PRIMARY KEY,
-                        meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
-                        metadata JSONB,
-                        text TEXT,
-                        embedding VECTOR({os.getenv('VECTOR_SIZE')})
-                    );
-
-                    CREATE TABLE IF NOT EXISTS chat (
-                        id SERIAL PRIMARY KEY,
-                        filter JSONB,
-                        history JSONB
-                    );
-                """)
-                conn.commit()
-                if verbose:
-                    print("Tables created successfully.")
+            CREATE TABLE IF NOT EXISTS chat (
+                id SERIAL PRIMARY KEY,
+                filter JSONB,
+                history JSONB
+            );
+            """
+        )
+        if verbose: print("Tables setup successfully.")
 
     @staticmethod
     def get_action_items():
@@ -219,5 +143,5 @@ class DB_Manager:
                 conn.commit()
 
     @classmethod
-    def full_setup(cls, verbose=False):
-        cls.setup_table_structure(verbose)
+    async def full_setup(cls, verbose=False):
+        await cls.setup_table_structure(verbose)

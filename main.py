@@ -1,22 +1,29 @@
 import json
-
+import asyncio
+import sys
 from dotenv import load_dotenv
 from manager import Thingo
 from docker_manager import DockerManager
 from database_manager import DB_Manager
 
 load_dotenv()
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-
-# with PG_Manager(remove_when_done=False) as m:
-#     m.full_setup()
-#     DB_Manager.full_setup()
-t = Thingo(10, pg_manager=1)  # need a metadatafile
-data = []
-with open("data/saved_docs/ES2016a_transcript.txt", "r") as f:
-    for line in f:
-        data.append(json.loads(line))
-print(t.rag.identify_speakers(data))
+with DockerManager(remove_when_done=True) as m:
+    m.full_setup()
+    try:
+        print("SETUP")
+        asyncio.run(DB_Manager.full_setup(True))
+    except Exception as e:
+        print(e)
+    t = Thingo(10, pg_manager=m)  # need a metadatafile
+    data = []
+    input()
+    # with open("data/saved_docs/ES2016a_transcript.txt", "r") as f:
+    #     for line in f:
+    #         data.append(json.loads(line))
+# print(t.rag.identify_speakers(data))
 
 
 # print(data)
@@ -24,7 +31,6 @@ print(t.rag.identify_speakers(data))
 
     # print(t.rag.identify_speakers(data))
     # t.add_text_document("data/saved_docs/ES2016a_transcript.txt")
-
 exit()
 # with open("data/saved_docs/file_test.txt", 'r') as f:
 #     t.rag.extract_objects(f.read())
