@@ -9,7 +9,7 @@ load_dotenv()
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-with DockerManager(remove_when_done=True) as m:
+with DockerManager(stop_when_done=False, remove_when_done=False) as m:
     m.full_setup()
     try:
         print("SETUP")

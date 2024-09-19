@@ -17,10 +17,11 @@ client = docker.from_env()
 
 class DockerManager:
 
-    def __init__(self, remove_when_done=False):
+    def __init__(self, stop_when_done=False, remove_when_done=False):
         self.volume: Volume | None = None
         self.container: Container | None = None
         self.remove_when_done = remove_when_done
+        self.stop_when_done = stop_when_done
 
     def create_volume(self, verbose=False):
         volume_name = os.getenv("VOLUME_NAME")
@@ -80,21 +81,22 @@ class DockerManager:
         if verbose:
             print("Container running.")
 
-    def cleanup(self, remove=False, verbose=False):
-        self.container.stop()
-        if verbose: print("Container stopped.")
-        if remove:
-            self.container.remove()
-            if verbose: print("Container removed.")
-            self.volume.remove()
-            if verbose: print("Volume removed.")
+    def cleanup(self, stop=False, remove=False, verbose=False):
+        if stop:
+            self.container.stop()
+            if verbose: print("Container stopped.")
+            if remove:
+                self.container.remove()
+                if verbose: print("Container removed.")
+                self.volume.remove()
+                if verbose: print("Volume removed.")
 
     def full_setup(self, verbose=False):
         self.create_volume(verbose)
         self.create_container(verbose)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cleanup(remove=self.remove_when_done)
+        self.cleanup(stop=self.stop_when_done, remove=self.remove_when_done)
         pass
 
     def __enter__(self):
