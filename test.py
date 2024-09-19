@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 from dotenv import load_dotenv
 from typing import Union
-from docker_db_manager import DockerManager
+from docker_manager import DockerManager
 from database_manager import DB_Manager
 
 load_dotenv()

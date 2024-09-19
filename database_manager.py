@@ -84,6 +84,20 @@ class DB_Manager:
         ) as conn:
             if verbose: print("Connected to the PostgreSQL database successfully.")
 
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'people'
+                    );
+                """)
+                table_exists = cur.fetchone()[0]
+
+            # Exit if the tables have already been set up
+            if table_exists:
+                if verbose: print("Database tables are already set up.")
+                return
+
             # Install the pgvector extension
             with conn.cursor() as cur:
                 cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")

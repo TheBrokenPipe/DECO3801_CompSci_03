@@ -8,7 +8,7 @@ from file_manager import FileManager
 from RAG import RAG
 from ASR import ASR
 from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
-from docker_db_manager import DockerManager
+from docker_manager import DockerManager
 
 
 class Thingo:
