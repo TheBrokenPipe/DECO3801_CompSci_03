@@ -7,6 +7,10 @@
 * [NumPy](https://github.com/numpy/numpy)
 * [Langchain](https://github.com/langchain-ai/langchain)
 * [Streamlit](https://github.com/streamlit/streamlit)
+* Docker
+* Psycopg
+* Streamlit-tags
+* Python-dotenv
 
 ## Installation and Usage
 1. Install Python 3 (minimum Python version 3.11)
