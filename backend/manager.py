@@ -46,7 +46,7 @@ class Manager:
 
     @staticmethod
     async def create_meeting(
-            name: str, date: datetime, file_recording: str, file_transcript: str
+            name: str, date: datetime, file_recording: str, file_transcript: str, summary: str
     ) -> Meeting:
         meeting = await insert_into_table(
             MeetingCreation(
@@ -54,7 +54,7 @@ class Manager:
                 date=date,
                 file_recording=file_recording,
                 file_transcript=file_transcript,
-                summary="Summary"
+                summary=summary
             ), always_return_list=False
         )
         print(f"Meeting added: {meeting.name}")
