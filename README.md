@@ -1,15 +1,4 @@
 # CompSci_03
-## Project Structure
-```
-|- frontend  ( a folder for code relating to the front end )
-|----- index.py           <- a prototype of the UI to integrate with any early work on the backend
-|----- langchain_demo.py  <- a tutorial using streamlit and langchain with minor modifications
-|- ASR.py            <- backend code for automated speech recognition
-|- RAG.py            <- backend code for retrieval augmented generation
-|- main.py           <- backend code for running the main
-|- requirements.txt  <- the list of requirements/dependencies for this project
-```
-
 ## Dependencies
 * [Python 3](https://www.python.org/)
 * [Faiss](https://github.com/facebookresearch/faiss)
