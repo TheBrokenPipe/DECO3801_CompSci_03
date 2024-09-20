@@ -8,7 +8,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from .file_manager import FileManager
 from .RAG import RAG
-from .ASR import ASR
+# from .ASR import ASR
 from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
 from .docker_manager import DockerManager
 from models import *
@@ -25,7 +25,7 @@ class Manager:
         self.vdb_index: Union[faiss.IndexFlatL2, None] = None
 
         self.rag = RAG(self.open_ai_client)
-        self.asr = ASR(os.environ['HF_TOKEN'])
+        # self.asr = ASR(os.environ['HF_TOKEN'])
         self.pg_manager = pg_manager
 
     @staticmethod
@@ -45,13 +45,15 @@ class Manager:
         return tag
 
     @staticmethod
-    async def create_meeting(name: str, date: datetime) -> Meeting:
+    async def create_meeting(
+            name: str, date: datetime, file_recording: str, file_transcript: str
+    ) -> Meeting:
         meeting = await insert_into_table(
             MeetingCreation(
                 name=name,
                 date=date,
-                file_recording="things",
-                file_transcript="things",
+                file_recording=file_recording,
+                file_transcript=file_transcript,
                 summary="Summary"
             ), always_return_list=False
         )
