@@ -1,5 +1,7 @@
-
 import streamlit as st
+
+print("\nLoading Index")
+
 base_path = "pages/" 
 file_list = [
     'chat.py',  # keep the default page first
