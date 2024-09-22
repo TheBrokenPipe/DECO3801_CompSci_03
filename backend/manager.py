@@ -7,7 +7,8 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from .file_manager import FileManager
-from .RAG import RAG
+from .RAG_local import RAG
+# from .RAG import RAG
 from .ASR import ASR
 from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
 from .docker_manager import DockerManager
@@ -129,3 +130,8 @@ class Manager:
             
             await update_table(meeting)
 
+    async def ingest_meeting(self):
+        meetings = await select_ingestion_meeting(Meeting,(""),("summary"))
+        if len(meetings) > 0:
+            meeting = meetings[0]
+            self.logger.debug(meeting)
