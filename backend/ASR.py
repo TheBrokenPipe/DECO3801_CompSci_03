@@ -10,15 +10,20 @@ from time import monotonic
 
 class ASR:
 
-    def __init__(self, hf_token: str, cache_dir = "data/.cache"):
+    def __init__(self, hf_token: str, cache_dir = "data/.cache", transcript_dir = "data/transcripts"):
         """Initialise an ASR instance using WhisperX."""
         self.hf_token = hf_token
+
         self.cache_dir = cache_dir
         os.makedirs(self.cache_dir, exist_ok=True)
+        
+        self.transcript_dir = transcript_dir
+        os.makedirs(self.transcript_dir, exist_ok=True)
+        
         self.logger = logging.getLogger(__name__)
 
     def transcribe_audio_file(self, file_path: str) -> str:
-        """Create JSONL transcript with speaker diarization of audio from file path."""
+        """Save JSONL transcript with speaker diarization of audio."""
         cache_file = Path(self.cache_dir) / (Path(file_path).stem + ".json")
         try:
             with open(cache_file, 'r') as file:
@@ -32,7 +37,12 @@ class ASR:
 
         transcript = '\n'.join(segments)
 
-        return transcript
+        transcript_file = Path(self.transcript_dir) / (Path(file_path).stem + "_transcript.jsonl")
+
+        with open(transcript_file, "w", encoding="utf-8") as jsonl_file:
+                jsonl_file.write(transcript)
+
+        return str(transcript_file)
 
     def transcribe_audio_file_whisperx_raw(self, file_path: str):
         """Create transcript with speaker diarization of audio from file path."""
