@@ -24,7 +24,7 @@ async def delete_from_table(
 
     filter_clause = ' AND '.join([f"{k} = %s" for k in key_name])
 
-    sql = f"DELETE FROM app.{model.__tablename__} WHERE {filter_clause} RETURNING *;"
+    sql = f"DELETE FROM {model.__tablename__} WHERE {filter_clause} RETURNING *;"
 
     try:
         # Execute the SQL query
@@ -52,7 +52,7 @@ async def update_table(obj: BaseModel) -> BaseModelSubClass:
     set_clause = ', '.join([f"{key} = %s" for key in data.keys()])
 
     sql = f"""
-        UPDATE app.{obj.__tablename__} 
+        UPDATE {obj.__tablename__} 
         SET {set_clause}
         WHERE {primary_key_column} = %s
         RETURNING *;
