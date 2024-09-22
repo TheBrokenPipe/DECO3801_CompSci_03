@@ -120,7 +120,7 @@ class Manager:
     def query(self, query_text: str):
         return self.rag.query(query_text)
     
-    async def ingest_meeting(self):
+    async def transcribe_meeting(self):
         meetings = await select_many_from_table(Meeting,(""),("file_transcript"))
         if len(meetings) > 0:
             meeting = meetings[0]
