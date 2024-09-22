@@ -15,7 +15,6 @@ from .docker_manager import DockerManager
 from models import *
 from access import *
 import logging
-from pathlib import Path
 
 class Manager:
 
@@ -26,7 +25,7 @@ class Manager:
         self.open_ai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
         self.vdb_index: Union[faiss.IndexFlatL2, None] = None
 
-        self.rag = RAG(self.open_ai_client)
+        self.rag = RAG()
         self.asr = ASR(os.environ['HF_TOKEN'])
         self.pg_manager = pg_manager
         self.logger = logging.getLogger(__name__)
@@ -127,11 +126,15 @@ class Manager:
             meeting = meetings[0]
             recording = meeting.file_recording
             meeting.file_transcript = self.asr.transcribe_audio_file(recording)
-            
             await update_table(meeting)
 
     async def ingest_meeting(self):
         meetings = await select_ingestion_meeting(Meeting,(""),("summary"))
         if len(meetings) > 0:
             meeting = meetings[0]
-            self.logger.debug(meeting)
+            with open(meeting.file_transcript, 'r') as file:
+                transcript = file.read()
+            meeting.summary = self.rag.abstract_summary_extraction(transcript)
+
+            # TODO: RAG embedding
+            await update_table(meeting)

@@ -22,7 +22,7 @@ async def main():
         await DB_Manager.full_setup()
         t = Manager(10, pg_manager=m)
         while True:
-            await t.transcribe_meeting()
+            # await t.transcribe_meeting()
             await t.ingest_meeting()
         
         

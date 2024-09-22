@@ -8,6 +8,7 @@ from openai import OpenAI
 from pydantic import BaseModel
 from datetime import datetime
 from langchain_community.llms import Llamafile
+from langchain_core.prompts import PromptTemplate
 
 
 open_ai_text_model = "gpt-4o-mini"
@@ -64,15 +65,19 @@ class IdentifiedSpeakers(BaseModel):
 
 class RAG:
 
-    open_ai_text_model = "gpt-4o-mini"
-
     def __init__(
             self,
-            open_ai_client: OpenAI,
             n_dimensions: int = 400
     ):
-        self.llm = Llamafile()
         self.n_dimensions = n_dimensions
+
+    def invoke_llm(self, system_prompt: str, user_prompt: str) -> str:
+        llm = Llamafile()
+        template = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n{system_prompt}<|eot_id|><|start_header_id|>user<|end_header_id|>\n{user_prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
+        prompt = PromptTemplate.from_template(template=template)
+        session = prompt | llm.bind(stop=["<|eot_id|>"])
+        response = session.invoke({"system_prompt": system_prompt, "user_prompt": user_prompt})
+        return response
 
     def llm_completion(self, messages: list[dict]) -> str:
         response = self.open_ai_client.chat.completions.create(
@@ -174,22 +179,8 @@ class RAG:
         return self.get_docs_from_indexes(indexes[0])
 
     def abstract_summary_extraction(self, transcription):
-        return self.llm_completion(
-            [
-                {
-                    "role": "system",
-                    "content": "You are a highly skilled AI trained in language comprehension and summarization. "
-                               "I would like you to read the following text and summarize it into a concise abstract "
-                               "paragraph. Aim to retain the most important points, providing a coherent and readable "
-                               "summary that could help a person understand the main points of the discussion without "
-                               "needing to read the entire text. Please avoid unnecessary details or tangential points."
-                },
-                {
-                    "role": "user",
-                    "content": transcription
-                }
-            ]
-        )
+        system_prompt = "You are a highly skilled AI trained in language comprehension and summarization. I would like you to read the following text and summarize it into a concise abstract paragraph. Aim to retain the most important points, providing a coherent and readable summary that could help a person understand the main points of the discussion without needing to read the entire text. Please avoid unnecessary details or tangential points."
+        return self.invoke_llm(system_prompt, transcription)
 
     def key_points_extraction(self, transcription):
         return self.extract_specific_objects(transcription, KeyPoints)
