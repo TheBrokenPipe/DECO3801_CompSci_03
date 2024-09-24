@@ -1,4 +1,3 @@
-import faiss
 import numpy as np
 import json
 import os
@@ -7,13 +6,14 @@ from bidict import bidict
 from openai import OpenAI
 from pydantic import BaseModel
 from datetime import datetime
-from langchain_community.llms import Llamafile
-from langchain_core.prompts import PromptTemplate
-
-
-open_ai_text_model = "gpt-4o-mini"
-open_ai_embedding_model = "text-embedding-3-small"
-
+from langchain_ollama import ChatOllama
+from langchain_core.tools import tool
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.utils.function_calling import convert_to_openai_tool
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import *
 
 class KeyPoint(BaseModel):
     """
@@ -72,10 +72,12 @@ class RAG:
         self.n_dimensions = n_dimensions
 
     def invoke_llm(self, system_prompt: str, user_prompt: str) -> str:
-        llm = Llamafile()
-        template = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n{system_prompt}<|eot_id|><|start_header_id|>user<|end_header_id|>\n{user_prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
-        prompt = PromptTemplate.from_template(template=template)
-        session = prompt | llm.bind(stop=["<|eot_id|>"])
+        llm = ChatOllama(model="llama3.1e",temperature=0)
+        prompt = ChatPromptTemplate.from_messages(
+            [("system","{system_prompt}",),
+                ("human", "{user_prompt}"),])
+        parser = StrOutputParser()
+        session = prompt | llm | parser
         response = session.invoke({"system_prompt": system_prompt, "user_prompt": user_prompt})
         return response
 
@@ -88,24 +90,13 @@ class RAG:
         return response.choices[0].message.content
 
     def extract_specific_objects(self, text, model) -> dict:
-        system_prompt = [
-            {
-                "role": "system",
-                "content": f"You are tasked with finding objects in the text matching the provided model."
-            },
-            {
-                "role": "user",
-                "content": text
-            }
-        ]
+        llm = ChatOllama(model="llama3.1e")
+        dict_schema = convert_to_openai_tool(model)
+        structured_llm = llm.with_structured_output(dict_schema)
 
-        response = self.open_ai_client.beta.chat.completions.parse(
-            model=self.open_ai_text_model,
-            messages=system_prompt,
-            response_format=model,
-        )
-
-        return json.loads(response.choices[0].message.content)
+        response = structured_llm.invoke(text)
+        
+        return response
 
     def identify_speakers(self, lines: list[dict]) -> list[dict]:
         """
@@ -183,10 +174,12 @@ class RAG:
         return self.invoke_llm(system_prompt, transcription)
 
     def key_points_extraction(self, transcription):
-        return self.extract_specific_objects(transcription, KeyPoints)
+        transcript = jsonl_to_txt(transcription)
+        return self.extract_specific_objects("What are the key points in this transcript?\n\n" + transcript, KeyPoints)
 
     def action_item_extraction(self, transcription):
-        return self.extract_specific_objects(transcription, ActionItems)
+        transcript = jsonl_to_txt(transcription)
+        return self.extract_specific_objects("What action items are in this transcript?\n\n" + transcript, ActionItems)
 
     def sentiment_analysis(self, transcription):
         return self.llm_completion(

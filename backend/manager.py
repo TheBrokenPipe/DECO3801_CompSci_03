@@ -132,9 +132,13 @@ class Manager:
         meetings = await select_ingestion_meeting(Meeting,(""),("summary"))
         if len(meetings) > 0:
             meeting = meetings[0]
-            with open(meeting.file_transcript, 'r') as file:
+            with open(meeting.file_transcript, 'r', encoding="utf-8") as file:
                 transcript = file.read()
-            meeting.summary = self.rag.abstract_summary_extraction(transcript)
 
-            # TODO: RAG embedding
+            full_summary = self.rag.summarise_meeting(transcript)
+            meeting.summary = full_summary['abstract_summary']
             await update_table(meeting)
+
+            
+            # TODO: RAG chunking and embedding goes here
+            
