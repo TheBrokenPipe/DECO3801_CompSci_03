@@ -1,7 +1,5 @@
 import os
-import faiss
 from openai import OpenAI
-from typing import Union
 from datetime import datetime
 import sys
 
@@ -23,9 +21,8 @@ class Manager:
         pg_manager: DockerManager = None
     ):
         # self.open_ai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
-        self.vdb_index: Union[faiss.IndexFlatL2, None] = None
 
-        self.rag = RAG()
+        self.rag = RAG(n_dimensions)
         self.pg_manager = pg_manager
         self.logger = logging.getLogger(__name__)
 
