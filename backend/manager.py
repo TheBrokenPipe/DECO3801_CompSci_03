@@ -22,7 +22,7 @@ class Manager:
         self, n_dimensions: int = 400,
         pg_manager: DockerManager = None
     ):
-        self.open_ai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+        # self.open_ai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
         self.vdb_index: Union[faiss.IndexFlatL2, None] = None
 
         self.rag = RAG()
