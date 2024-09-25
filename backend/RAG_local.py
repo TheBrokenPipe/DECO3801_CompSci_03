@@ -50,14 +50,6 @@ class RAG:
         response = session.invoke({"system_prompt": system_prompt, "user_prompt": user_prompt})
         return response
 
-    def llm_completion(self, messages: list[dict]) -> str:
-        response = self.open_ai_client.chat.completions.create(
-            model=self.open_ai_text_model,
-            temperature=0,
-            messages=messages
-        )
-        return response.choices[0].message.content
-
     def extract_specific_objects(self, text, model) -> dict:
         structured_llm = self.llm.with_structured_output(model)
         response = structured_llm.invoke(text)
@@ -77,23 +69,14 @@ class RAG:
         with open(self.get_closest_docs(query_text)[0], 'r') as f:
             context = f.read()
 
-        system_prompt = [
-            {
-                "role": "system",
-                "content": f"You are an assistant for question-answering tasks. "
-                           f"Use the following pieces of retrieved context to answer "
-                           f"the question. If you don't know the answer, say that you "
-                           f"don't know. Do not include any general information unless necessary\n\n"
-                           f"Use three sentences maximum and keep the answer concise. \n\n"
-                           f"{context}"
-            },
-            {
-                "role": "user",
-                "content": query_text
-            }
-        ]
+        system_prompt = f"You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, say that you don't know. Do not include any general information unless necessary. Use three sentences maximum and keep the answer concise. \n\n Context: {context}"
+        user_prompt = query_text
 
-        return self.llm_completion(system_prompt)
+        # Alternative prompts with context in user prompt rather than system prompt
+        # system_prompt = "You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, say that you don't know. Do not include any general information unless necessary. Use three sentences maximum and keep the answer concise."
+        # user_prompt = f"Context: {context}\n\nQuestion: {query_text}""
+        
+        return self.invoke_llm(system_prompt, user_prompt)
 
     def get_closest_indexes(self, embedding: np.ndarray, k=5) -> tuple[list[float], list[int]]:
         """returns distances, indexes"""
