@@ -9,7 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from .file_manager import FileManager
 from .RAG_local import RAG
 # from .RAG import RAG
-from .ASR import ASR
+
 from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
 from .docker_manager import DockerManager
 from models import *
@@ -26,7 +26,6 @@ class Manager:
         self.vdb_index: Union[faiss.IndexFlatL2, None] = None
 
         self.rag = RAG()
-        self.asr = ASR(os.environ['HF_TOKEN'])
         self.pg_manager = pg_manager
         self.logger = logging.getLogger(__name__)
 
@@ -128,32 +127,3 @@ class Manager:
     def query(self, query_text: str):
         return self.rag.query(query_text)
     
-    async def transcribe_meeting(self):
-        meetings = await select_many_from_table(Meeting,(""),("file_transcript"))
-        if len(meetings) > 0:
-            meeting = meetings[0]
-            recording = meeting.file_recording
-            meeting.file_transcript = self.asr.transcribe_audio_file(recording)
-            await update_table(meeting)
-
-    async def ingest_meeting(self):
-        meetings = await select_ingestion_meeting(Meeting,(""),("summary"))
-        if len(meetings) > 0:
-            meeting = meetings[0]
-            with open(meeting.file_transcript, 'r', encoding="utf-8") as file:
-                transcript = file.read()
-
-            full_summary = self.rag.summarise_meeting(transcript)
-            self.logger.debug(full_summary)
-
-            meeting.summary = full_summary['abstract_summary']
-            await update_table(meeting)
-
-            for action_item in full_summary['action_items'].action_items:
-                await self.create_action_item(action_item, meeting)
-
-            for key_point in full_summary['key_points'].key_points:
-                await self.create_key_point(key_point, meeting)
-            
-            # TODO: RAG chunking and embedding goes here
-            
