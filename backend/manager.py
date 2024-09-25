@@ -63,6 +63,14 @@ class Manager:
         return meeting
 
     @staticmethod
+    async def create_action_item(item: str, meeting: Meeting):
+        return await insert_into_table(ActionItemCreation(text=item, meeting_id=meeting.id))
+
+    @staticmethod
+    async def create_key_point(point: str, meeting: Meeting):
+        return await insert_into_table(KeyPointCreation(text=point, meeting_id=meeting.id))
+
+    @staticmethod
     async def add_meetings_to_tag(tag: Tag, meetings: Meeting | list[Meeting]) -> list[MeetingTag]:
         if isinstance(meetings, Meeting):
             return await insert_into_table(MeetingTagCreation(meeting_id=meetings.id, tag_id=tag.id))
@@ -136,9 +144,16 @@ class Manager:
                 transcript = file.read()
 
             full_summary = self.rag.summarise_meeting(transcript)
+            self.logger.debug(full_summary)
+
             meeting.summary = full_summary['abstract_summary']
             await update_table(meeting)
 
+            for action_item in full_summary['action_items'].action_items:
+                await self.create_action_item(action_item, meeting)
+
+            for key_point in full_summary['key_points'].key_points:
+                await self.create_key_point(key_point, meeting)
             
             # TODO: RAG chunking and embedding goes here
             

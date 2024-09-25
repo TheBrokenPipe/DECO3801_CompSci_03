@@ -11,6 +11,7 @@ from langchain_core.tools import tool
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.utils.function_calling import convert_to_openai_tool
+import logging
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import *
@@ -24,9 +25,9 @@ class KeyPoint(BaseModel):
 
 class KeyPoints(BaseModel):
     """
-    people: list of key points mentioned in text
+    key_points: list of key points mentioned in text
     """
-    key_points: list[KeyPoint]
+    key_points: list[str]
 
 
 class ActionItem(BaseModel):
@@ -42,9 +43,9 @@ class ActionItem(BaseModel):
 
 class ActionItems(BaseModel):
     """
-    people: list of action items mentioned in text
+    action_items: list of action items mentioned in text
     """
-    action_items: list[ActionItem]
+    action_items: list[str]
 
 
 class Speaker(BaseModel):
@@ -70,6 +71,7 @@ class RAG:
             n_dimensions: int = 400
     ):
         self.n_dimensions = n_dimensions
+        self.logger = logging.getLogger(__name__)
 
     def invoke_llm(self, system_prompt: str, user_prompt: str) -> str:
         llm = ChatOllama(model="llama3.1e",temperature=0)
@@ -91,8 +93,10 @@ class RAG:
 
     def extract_specific_objects(self, text, model) -> dict:
         llm = ChatOllama(model="llama3.1e")
-        dict_schema = convert_to_openai_tool(model)
-        structured_llm = llm.with_structured_output(dict_schema)
+        # dict_schema = convert_to_openai_tool(model)
+        # self.logger.debug(dict_schema)
+        # structured_llm = llm.with_structured_output(dict_schema)
+        structured_llm = llm.with_structured_output(model)
 
         response = structured_llm.invoke(text)
         
