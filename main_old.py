@@ -13,7 +13,7 @@ with DockerManager(stop_when_done=False, remove_when_done=False) as m:
     m.full_setup()
     try:
         print("SETUP")
-        asyncio.run(DB_Manager.full_setup(True))
+        asyncio.run(DB_Manager.full_setup())
     except Exception as e:
         print(e)
     t = Manager(10, pg_manager=m)  # need a metadatafile

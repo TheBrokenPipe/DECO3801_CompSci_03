@@ -13,6 +13,7 @@ class MeetingCreation(BaseModel):
     file_recording: str
     file_transcript: str
     summary: str
+    status: str
 
 
 class KeyPointCreation(BaseModel):

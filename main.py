@@ -24,7 +24,8 @@ async def main():
         ingestion = Ingestion()
         while True:
             await ingestion.transcribe_next_meeting()
-            await ingestion.ingest_next_meeting()
+            await ingestion.summarise_next_meeting()
+            # await ingestion.ingest_next_meeting()
         
         
 asyncio.run(main())

@@ -3,7 +3,7 @@ import json
 import os
 from .file_manager import FileManager
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from datetime import datetime
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -37,9 +37,9 @@ class RAG:
         self.n_dimensions = n_dimensions
         self.logger = logging.getLogger(__name__)
         if "OPENAI_API_KEY" in os.environ:
-            self.llm = ChatOpenAI(model=os.environ.get("OPENAI_LLM_MODEL", "gpt-4o-mini"), temperature=0)
+            self.llm = ChatOpenAI(model=os.environ.get("OPENAI_LLM_MODEL", "gpt-4o-mini"), temperature=0.2)
         else:
-            self.llm = ChatOllama(model=os.environ.get("OLLAMA_MODEL", "llama3.1e"), temperature=0)
+            self.llm = ChatOllama(model=os.environ.get("OLLAMA_MODEL", "llama3.1e"), temperature=0.2)
 
 
     def invoke_llm(self, system_prompt: str, user_prompt: str) -> str:
@@ -51,9 +51,16 @@ class RAG:
         response = session.invoke({"system_prompt": system_prompt, "user_prompt": user_prompt})
         return response
 
-    def extract_specific_objects(self, text, model) -> dict:
+    def extract_specific_objects(self, text, model, retries = 3) -> dict:
         structured_llm = self.llm.with_structured_output(model)
-        response = structured_llm.invoke(text)
+        try:
+            response = structured_llm.invoke(text)
+        except ValidationError as exc:
+            self.logger.debug(exc)
+            if retries > 0:
+                response = self.extract_specific_objects(text, model, retries - 1)
+            else:
+                response = []
         return response
 
 
@@ -104,8 +111,9 @@ class RAG:
         return self.get_docs_from_indexes(indexes[0])
 
     def abstract_summary_extraction(self, transcription):
+        transcript = jsonl_to_txt(transcription)
         system_prompt = "You are a highly skilled AI trained in language comprehension and summarization. I would like you to read the following text and summarize it into a concise abstract paragraph. Aim to retain the most important points, providing a coherent and readable summary that could help a person understand the main points of the discussion without needing to read the entire text. Please avoid unnecessary details or tangential points."
-        return self.invoke_llm(system_prompt, transcription)
+        return self.invoke_llm(system_prompt, transcript)
 
     def key_points_extraction(self, transcription):
         transcript = jsonl_to_txt(transcription)

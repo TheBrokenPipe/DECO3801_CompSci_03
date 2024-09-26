@@ -14,8 +14,22 @@ class Ingestion:
         self.asr = ASR(os.environ['HF_TOKEN'])
         self.logger = logging.getLogger(__name__)
 
+    async def summarise_next_meeting(self):
+        meetings = await select_many_from_table(Meeting,("Transcribed"),("status"))
+        if len(meetings) > 0:
+            meeting = meetings[0]
+            with open(meeting.file_transcript, 'r', encoding="utf-8") as file:
+                transcript = file.read()
+
+            full_summary = self.manager.rag.abstract_summary_extraction(transcript)
+            self.logger.debug(full_summary)
+
+            meeting.summary = full_summary
+            meeting.status = "Summarised"
+            await update_table(meeting)
+
     async def ingest_next_meeting(self):
-        meetings = await select_ingestion_meeting(Meeting,(""),("summary"))
+        meetings = await select_many_from_table(Meeting,("Summarised"),("status"))
         if len(meetings) > 0:
             meeting = meetings[0]
             with open(meeting.file_transcript, 'r', encoding="utf-8") as file:
@@ -25,7 +39,7 @@ class Ingestion:
             self.logger.debug(full_summary)
 
             meeting.summary = full_summary['abstract_summary']
-            await update_table(meeting)
+            
 
             for action_item in full_summary['action_items'].action_items:
                 await self.manager.create_action_item(action_item, meeting)
@@ -34,13 +48,17 @@ class Ingestion:
                 await self.manager.create_key_point(key_point, meeting)
             
             # TODO: RAG chunking and embedding goes here
+
+            meeting.status = "Ready"
+            await update_table(meeting)
             
     async def transcribe_next_meeting(self):
-        meetings = await select_many_from_table(Meeting,(""),("file_transcript"))
+        meetings = await select_many_from_table(Meeting,("Queued"),("status"))
         if len(meetings) > 0:
             meeting = meetings[0]
             recording = meeting.file_recording
             meeting.file_transcript = self.asr.transcribe_audio_file(recording)
+            meeting.status = "Transcribed"
             await update_table(meeting)
     
 

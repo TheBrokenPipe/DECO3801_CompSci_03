@@ -5,8 +5,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from .file_manager import FileManager
-from .RAG_local import RAG
-# from .RAG import RAG
+from .RAG import RAG
 
 from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
 from .docker_manager import DockerManager
@@ -52,7 +51,8 @@ class Manager:
                 date=date,
                 file_recording=file_recording,
                 file_transcript=file_transcript,
-                summary=summary
+                summary=summary,
+                status = "Queued"
             ), always_return_list=False
         )
         print(f"Meeting added: {meeting.name}")

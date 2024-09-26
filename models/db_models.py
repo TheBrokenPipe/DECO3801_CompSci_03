@@ -14,6 +14,7 @@ class Meeting(BaseModel):
     file_recording: str
     file_transcript: str
     summary: str
+    status: str
 
 
 class KeyPoint(BaseModel):
@@ -43,6 +44,7 @@ class Tag(BaseModel):
     __primarykey__ = "id"
     id: int
     name: str
+    last_modified: datetime
 
 
 class MeetingTag(BaseModel):
