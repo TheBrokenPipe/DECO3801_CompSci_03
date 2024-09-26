@@ -36,10 +36,11 @@ class RAG:
     ):
         self.n_dimensions = n_dimensions
         self.logger = logging.getLogger(__name__)
-        if not os.environ.get("OPENAI_API_KEY"):
-            self.llm = ChatOllama(model="llama3.1e", temperature=0)
+        if "OPENAI_API_KEY" in os.environ:
+            self.llm = ChatOpenAI(model=os.environ.get("OPENAI_LLM_MODEL", "gpt-4o-mini"), temperature=0)
         else:
-            self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+            self.llm = ChatOllama(model=os.environ.get("OLLAMA_MODEL", "llama3.1e"), temperature=0)
+
 
     def invoke_llm(self, system_prompt: str, user_prompt: str) -> str:
         prompt = ChatPromptTemplate.from_messages(
