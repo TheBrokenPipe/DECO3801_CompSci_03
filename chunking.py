@@ -3,7 +3,9 @@ from langchain.docstore.document import Document
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain_community.utils.math import cosine_similarity
 from typing import List
+from langchain_ollama import OllamaEmbeddings
 
+from time import monotonic
 # Chunking and Retrieving strategies
 # 1. propositional chunking
 # 2. semantic chunking
@@ -12,9 +14,13 @@ from typing import List
 
 class chunks:
     def __init__(self):
-        self.embeddings = OpenAIEmbeddings()
+        # self.embeddings = OpenAIEmbeddings()
+        self.embeddings = OllamaEmbeddings(
+            model="nomic-embed-text",
+        )
 
     def get_embedding(self, text):
+        # embedding = self.embeddings.embed_documents(["clustering: " + text])[0]
         embedding = self.embeddings.embed_documents([text])[0]
         return embedding
 
@@ -48,7 +54,7 @@ class chunks:
 
         return merged_lines
 
-    def semantic_chunking(self, merged_lines: List[dict], filename: str) -> List[Document]:
+    def semantic_chunking(self, merged_lines: List[dict], filename: str, threshold = 0.6) -> List[Document]:
         embeddings = [self.get_embedding(line['text']) for line in merged_lines]
 
         chunks = []
@@ -58,8 +64,8 @@ class chunks:
         for i in range(len(merged_lines)):
             current_chunk.append(merged_lines[i])
 
-            if len(merged_lines[i]['text'].split()) < 5:
-                continue
+            # if len(merged_lines[i]['text'].split()) < 5:
+            #     continue
 
             # Check if there is a next line to compare
             if i + 1 < len(merged_lines):
@@ -70,9 +76,9 @@ class chunks:
                 similarity = cosine_similarity([combined_embedding], [next_embedding])[0][0]
 
                 # Threshold for creating a new chunk
-                if similarity < 0.60:
+                if similarity < threshold and len(merged_lines[i+1]['text'].split()) > 5:
                     end_time = merged_lines[i]['end_time']
-                    chunk_text = " ".join([f"{line['speaker']}: {line['text']}" for line in current_chunk])
+                    chunk_text = "\n".join([f"{line['speaker']}: {line['text']}" for line in current_chunk])
 
                     # Create a LangChain document with metadata
                     doc = Document(
@@ -106,7 +112,26 @@ class chunks:
         return chunks
 
 # test
-file_path = "data/ES2002d.Mix-Headset_transcript.jsonl"
-jsonl_input = load_jsonl_file(file_path)
-merged = merge_speaker_lines(jsonl_input)
-print(merged)
+file_path = "./data/transcripts/ES2002d.Mix-Headset_transcript.jsonl"
+chunking = chunks()
+jsonl = chunking.load_jsonl_file(file_path)
+merged = chunking.merge_speaker_lines(jsonl)
+# with open("merged.txt", "w", encoding="utf-8") as merged_file:
+#     for merge in merged:
+#         merged_file.write(str(merge) + "\n")
+# print("Merging done!")
+
+for threshold in [0.5, 0.55, 0.6, 0.65]:
+    time = monotonic()
+    chunked = chunking.semantic_chunking(merged,file_path, threshold)
+    duration = monotonic() - time
+    print(f"Chunked at threshold {threshold:.2f} in {duration:.3f}s")
+    with open(f"chunks_{threshold:.2f}.txt", "w", encoding="utf-8") as chunks_file:
+        for doc in chunked:
+            docstr = str(doc).replace("\n", " ")
+            chunks_file.write(docstr + "\n")
+print("Chunking done!")
+
+# jsonl_input = load_jsonl_file(file_path)
+# merged = merge_speaker_lines(jsonl_input)
+# print(merged)
