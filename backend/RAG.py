@@ -51,16 +51,25 @@ class RAG:
         response = session.invoke({"system_prompt": system_prompt, "user_prompt": user_prompt})
         return response
 
-    def extract_specific_objects(self, text, model, retries = 3) -> dict:
-        structured_llm = self.llm.with_structured_output(model)
+    def extract_specific_objects(self, text, model, retries = 3):
+        prompt = ChatPromptTemplate.from_messages([
+            (
+                "system",
+                "You are an expert extraction algorithm. Only extract relevant information from the text. "
+                "If you do not know the value of an attribute asked to extract, return null for the attribute's value.",
+            ),
+            ("human","{text}")
+        ])
+        structured_llm = prompt | self.llm.with_structured_output(model)
         try:
-            response = structured_llm.invoke(text)
-        except ValidationError as exc:
-            self.logger.debug(exc)
+            response = structured_llm.invoke({"text":text})
+        except ValidationError as e:
+            self.logger.debug(e)
             if retries > 0:
                 response = self.extract_specific_objects(text, model, retries - 1)
             else:
-                response = []
+                response = None
+        self.logger.debug(response)
         return response
 
 
@@ -113,15 +122,18 @@ class RAG:
     def abstract_summary_extraction(self, transcription):
         transcript = jsonl_to_txt(transcription)
         system_prompt = "You are a highly skilled AI trained in language comprehension and summarization. I would like you to read the following text and summarize it into a concise abstract paragraph. Aim to retain the most important points, providing a coherent and readable summary that could help a person understand the main points of the discussion without needing to read the entire text. Please avoid unnecessary details or tangential points."
-        return self.invoke_llm(system_prompt, transcript)
+        summary = self.invoke_llm(system_prompt, transcript)
+        if isinstance(self.llm, ChatOllama) and summary[4:] == "Here":
+            summary = summary[summary.find("\n\n"):].strip()
+        return summary
 
     def key_points_extraction(self, transcription):
         transcript = jsonl_to_txt(transcription)
-        return self.extract_specific_objects("What are the key points in this transcript?\n\n" + transcript, KeyPoints)
+        return self.extract_specific_objects(transcript, KeyPoints)
 
     def action_item_extraction(self, transcription):
         transcript = jsonl_to_txt(transcription)
-        return self.extract_specific_objects("What action items are in this transcript?\n\n" + transcript, ActionItems)
+        return self.extract_specific_objects(transcript, ActionItems)
 
     def summarise_meeting(self, transcription) -> dict:
         return {

@@ -16,49 +16,57 @@ class Ingestion:
 
     async def summarise_next_meeting(self):
         meetings = await select_many_from_table(Meeting,("Transcribed"),("status"))
-        if len(meetings) > 0:
-            meeting = meetings[0]
-            with open(meeting.file_transcript, 'r', encoding="utf-8") as file:
-                transcript = file.read()
+        if not len(meetings) > 0:
+            return
+    
+        meeting = meetings[0]
+        with open(meeting.file_transcript, 'r', encoding="utf-8") as file:
+            transcript = file.read()
 
-            full_summary = self.manager.rag.abstract_summary_extraction(transcript)
-            self.logger.debug(full_summary)
+        summary = self.manager.rag.summarise_meeting(transcript)
+        self.logger.debug(summary)
 
-            meeting.summary = full_summary
-            meeting.status = "Summarised"
-            await update_table(meeting)
+        action_items = summary["action_items"]
+        if action_items is None:
+            self.logger.warning("Failed to extract action items meeting id {meeting.id}")
+        else:
+            for action_item in action_items.action_items:
+                await self.manager.create_action_item(action_item, meeting)
+
+        key_points = summary["key_points"]
+        if key_points is None:
+            self.logger.warning("Failed to extract key points meeting id {meeting.id}")
+        else:
+            for key_point in key_points.key_points:
+                await self.manager.create_key_point(key_point, meeting)
+
+        meeting.summary = summary["abstract_summary"]
+        meeting.status = "Summarised"
+        await update_table(meeting)
 
     async def ingest_next_meeting(self):
         meetings = await select_many_from_table(Meeting,("Summarised"),("status"))
-        if len(meetings) > 0:
-            meeting = meetings[0]
-            with open(meeting.file_transcript, 'r', encoding="utf-8") as file:
-                transcript = file.read()
+        if not len(meetings) > 0:
+            return
+        
+        meeting = meetings[0]
+        with open(meeting.file_transcript, 'r', encoding="utf-8") as file:
+            transcript = file.read()
 
-            full_summary = self.manager.rag.summarise_meeting(transcript)
-            self.logger.debug(full_summary)
+        # TODO: RAG chunking and embedding goes here
 
-            meeting.summary = full_summary['abstract_summary']
-            
-
-            for action_item in full_summary['action_items'].action_items:
-                await self.manager.create_action_item(action_item, meeting)
-
-            for key_point in full_summary['key_points'].key_points:
-                await self.manager.create_key_point(key_point, meeting)
-            
-            # TODO: RAG chunking and embedding goes here
-
-            meeting.status = "Ready"
-            await update_table(meeting)
+        meeting.status = "Ready"
+        await update_table(meeting)
             
     async def transcribe_next_meeting(self):
         meetings = await select_many_from_table(Meeting,("Queued"),("status"))
-        if len(meetings) > 0:
-            meeting = meetings[0]
-            recording = meeting.file_recording
-            meeting.file_transcript = self.asr.transcribe_audio_file(recording)
-            meeting.status = "Transcribed"
-            await update_table(meeting)
+        if not len(meetings) > 0:
+            return
+        
+        meeting = meetings[0]
+        recording = meeting.file_recording
+        meeting.file_transcript = self.asr.transcribe_audio_file(recording)
+        meeting.status = "Transcribed"
+        await update_table(meeting)
     
 
