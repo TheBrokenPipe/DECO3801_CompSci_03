@@ -7,6 +7,7 @@ from pydantic import BaseModel, ValidationError
 from datetime import datetime
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableLambda
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
@@ -50,26 +51,30 @@ class RAG:
         session = prompt | self.llm | parser
         response = session.invoke({"system_prompt": system_prompt, "user_prompt": user_prompt})
         return response
+    
+    @staticmethod
+    def check_none(model: BaseModel) -> BaseModel:
+        if model is None:
+            raise ValidationError
+        return model
 
-    def extract_specific_objects(self, text, model, retries = 3):
+    def extract_specific_objects(self, text, model):
         prompt = ChatPromptTemplate.from_messages([
             (
                 "system",
-                "You are an expert extraction algorithm. Only extract relevant information from the text. "
-                "If you do not know the value of an attribute asked to extract, return null for the attribute's value.",
+                "You are an expert extraction algorithm. "
+                "Only extract relevant information from the text. "
+                "If you do not know the value of an attribute asked to extract, "
+                "return null for the attribute's value.",
             ),
             ("human","{text}")
         ])
-        structured_llm = prompt | self.llm.with_structured_output(model)
+        structured_llm = self.llm.with_structured_output(model) | RunnableLambda(self.check_none)
+        session = prompt | structured_llm.with_retry()
         try:
-            response = structured_llm.invoke({"text":text})
-        except ValidationError as e:
-            self.logger.debug(e)
-            if retries > 0:
-                response = self.extract_specific_objects(text, model, retries - 1)
-            else:
-                response = None
-        self.logger.debug(response)
+            response = session.invoke({"text":text})
+        except Exception as e:
+            response = None
         return response
 
 
@@ -123,7 +128,7 @@ class RAG:
         transcript = jsonl_to_txt(transcription)
         system_prompt = "You are a highly skilled AI trained in language comprehension and summarization. I would like you to read the following text and summarize it into a concise abstract paragraph. Aim to retain the most important points, providing a coherent and readable summary that could help a person understand the main points of the discussion without needing to read the entire text. Please avoid unnecessary details or tangential points."
         summary = self.invoke_llm(system_prompt, transcript)
-        if isinstance(self.llm, ChatOllama) and summary[4:] == "Here":
+        if isinstance(self.llm, ChatOllama) and summary[:4] == "Here":
             summary = summary[summary.find("\n\n"):].strip()
         return summary
 
