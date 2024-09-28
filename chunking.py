@@ -14,8 +14,8 @@ class chunks:
         )
 
     def get_embedding(self, text):
-        # embedding = self.embeddings.embed_documents(["clustering: " + text])[0]
-        embedding = self.embeddings.embed_documents([text])[0]
+        embedding = self.embeddings.embed_documents(["clustering: " + text])[0]
+        # embedding = self.embeddings.embed_documents([text])[0]
         return embedding
 
     def load_jsonl_file(self, file_path):
@@ -125,6 +125,6 @@ for threshold in [0.5, 0.55, 0.6, 0.65]:
     print(f"Chunked at threshold {threshold:.2f} in {duration:.3f}s")
     with open(f"chunks_{threshold:.2f}.txt", "w", encoding="utf-8") as chunks_file:
         for doc in chunked:
-            docstr = str(doc).replace("\n", " ")
-            chunks_file.write(docstr + "\n")
+            #docstr = str(doc).replace("\n", " ")
+            chunks_file.write(str(doc) + "\n\n")
 print("Chunking done!")
