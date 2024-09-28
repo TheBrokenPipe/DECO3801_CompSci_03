@@ -31,6 +31,7 @@ class ActionItemCreation(BaseModel):
 class TagCreation(BaseModel):
     __db_model__ = Tag
     name: str
+    last_modified: datetime
 
 
 class MeetingTagCreation(BaseModel):

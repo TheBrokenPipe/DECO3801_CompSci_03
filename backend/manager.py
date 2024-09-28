@@ -35,7 +35,7 @@ class Manager:
 
     @staticmethod
     async def create_tag(name, meetings: list[Meeting]) -> Tag:
-        tag = await insert_into_table(TagCreation(name=name), always_return_list=False)
+        tag = await insert_into_table(TagCreation(name=name,last_modified=datetime.now()), always_return_list=False)
         print(f"Tag added: {tag.name}")
         await Manager.add_meetings_to_tag(tag, meetings)
         print(f"Meetings added")
