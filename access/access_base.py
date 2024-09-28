@@ -16,8 +16,6 @@ class AccessBase:
         f"password={os.getenv('DB_PASSWORD')}"
     )
 
-    print("Access Loaded")
-
     pool = AsyncConnectionPool(
         connection_string,
         min_size=1,
