@@ -1,16 +1,10 @@
 import json
 from langchain.docstore.document import Document
-from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain_community.utils.math import cosine_similarity
 from typing import List
 from langchain_ollama import OllamaEmbeddings
 
 from time import monotonic
-# Chunking and Retrieving strategies
-# 1. propositional chunking
-# 2. semantic chunking
-# 3. parent document retriever
-# using some combination of 2 or 3 of these
 
 class chunks:
     def __init__(self):
@@ -84,6 +78,7 @@ class chunks:
                     doc = Document(
                         page_content=chunk_text,
                         metadata={
+                            "id": len(chunks),
                             "start_time": current_start_time,
                             "end_time": end_time,
                             "filename": filename
@@ -97,11 +92,12 @@ class chunks:
 
         # Add last chunk if exists
         if current_chunk:
-            chunk_text = " ".join([f"{line['speaker']}: {line['text']}" for line in current_chunk])
+            chunk_text = "\n".join([f"{line['speaker']}: {line['text']}" for line in current_chunk])
             end_time = merged_lines[-1]['end_time']
             doc = Document(
                 page_content=chunk_text,
                 metadata={
+                    "id": len(chunks),
                     "start_time": current_start_time,
                     "end_time": end_time,
                     "filename": filename
@@ -112,7 +108,8 @@ class chunks:
         return chunks
 
 # test
-file_path = "./data/transcripts/ES2002d.Mix-Headset_transcript.jsonl"
+# file_path = "./data/transcripts/ES2002d.Mix-Headset_transcript.jsonl"
+file_path = "./data/ES2002d.Mix-Headset_transcript.jsonl"
 chunking = chunks()
 jsonl = chunking.load_jsonl_file(file_path)
 merged = chunking.merge_speaker_lines(jsonl)
@@ -131,7 +128,3 @@ for threshold in [0.5, 0.55, 0.6, 0.65]:
             docstr = str(doc).replace("\n", " ")
             chunks_file.write(docstr + "\n")
 print("Chunking done!")
-
-# jsonl_input = load_jsonl_file(file_path)
-# merged = merge_speaker_lines(jsonl_input)
-# print(merged)
