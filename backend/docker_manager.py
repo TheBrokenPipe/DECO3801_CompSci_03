@@ -1,14 +1,14 @@
 import os
+import time
+import logging
+
 import docker
 from docker.models.volumes import Volume
 from docker.models.containers import Container
 from docker.errors import NotFound
-import time
+
 import psycopg  # Import psycopg3
-from psycopg import sql
-from pydantic import BaseModel
 from dotenv import load_dotenv
-import logging
 
 load_dotenv()
 
@@ -25,7 +25,7 @@ class DockerManager:
         self.stop_when_done = stop_when_done
         self.logger = logging.getLogger(__name__)
 
-    def create_volume(self, verbose=False):
+    def create_volume(self):
         volume_name = os.getenv("VOLUME_NAME")
         # Create a Docker volume for persistent storage, if it doesn't exist
         try:
@@ -35,7 +35,7 @@ class DockerManager:
             self.volume = client.volumes.create(name=volume_name)
             self.logger.debug(f"Volume '{volume_name}' created.")
 
-    def create_container(self, verbose=False):  # Check if the container already exists
+    def create_container(self):  # Check if the container already exists
         container_name = os.getenv("CONTAINER_NAME")
         try:
             self.container = client.containers.get(container_name)
@@ -80,10 +80,9 @@ class DockerManager:
                 self.logger.error(f"An error occurred: {e}")
                 exit(1)
 
-        if verbose:
-            self.logger.info("Container running.")
+        self.logger.info("Container running.")
 
-    def cleanup(self, stop=False, remove=False, verbose=False):
+    def cleanup(self, stop=False, remove=False):
         if stop:
             self.container.stop()
             self.logger.debug("Container stopped.")

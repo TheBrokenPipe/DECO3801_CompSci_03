@@ -1,15 +1,13 @@
-import numpy as np
-import json
 import os
 import sys
-from .file_manager import FileManager
-
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import logging
+
+from .file_manager import FileManager
 from models import *
+from utils import *
 
 from pydantic import BaseModel, ValidationError
-from datetime import datetime
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
@@ -17,11 +15,6 @@ from langchain.docstore.document import Document
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_postgres import PGVector
-
-import logging
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import *
 
 class KeyPoints(BaseModel):
     """

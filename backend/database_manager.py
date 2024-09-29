@@ -1,11 +1,8 @@
-import json
 import os
-import psycopg
-from psycopg import sql
-from pydantic import BaseModel
+import logging
+
 from access import *
 from models import *
-import logging
 
 class DB_Manager:
 

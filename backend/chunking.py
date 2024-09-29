@@ -1,16 +1,17 @@
 import sys
 import os
-import logging
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from models import *
+
+import logging
 import json
+from typing import List
+from time import monotonic
+
 from langchain.docstore.document import Document
 from langchain_community.utils.math import cosine_similarity
-from typing import List
 from langchain_ollama import OllamaEmbeddings
 
-from time import monotonic
+from models import *
 
 class Chunks:
     def __init__(self):
@@ -121,7 +122,7 @@ class Chunks:
         time = monotonic()
         chunks = self.semantic_chunking(merged,file_path)
         duration = monotonic() - time
-        self.logger.debug(f"Transcribed audio file in {duration:.3f}s - '{file_path}'")
+        self.logger.debug(f"Chunked transcript in {duration:.3f}s - '{file_path}'")
         return chunks
 
 
