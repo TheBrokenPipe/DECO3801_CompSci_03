@@ -58,7 +58,7 @@ class MeetingTag(BaseModel):
     tag_id: int
 
 
-class Document(BaseModel):
+class Doc(BaseModel):
     __tablename__ = "document"
     __primarykey__ = "id"
     __foreignkeys__ = {

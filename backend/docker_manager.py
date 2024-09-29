@@ -92,9 +92,9 @@ class DockerManager:
                 self.volume.remove()
                 self.logger.debug("Volume removed.")
 
-    def full_setup(self, verbose=False):
-        self.create_volume(verbose)
-        self.create_container(verbose)
+    def full_setup(self):
+        self.create_volume()
+        self.create_container()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.cleanup(stop=self.stop_when_done, remove=self.remove_when_done)

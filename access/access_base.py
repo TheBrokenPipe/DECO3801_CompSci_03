@@ -5,6 +5,9 @@ import os
 from psycopg import AsyncCursor
 from psycopg.sql import SQL
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class AccessBase:
 

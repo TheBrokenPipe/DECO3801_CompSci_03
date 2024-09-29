@@ -40,8 +40,8 @@ class MeetingTagCreation(BaseModel):
     tag_id: int
 
 
-class DocumentCreation(BaseModel):
-    __db_model__ = Document
+class DocCreation(BaseModel):
+    __db_model__ = Doc
     meeting_id: int
     metadata: dict
     text: str
