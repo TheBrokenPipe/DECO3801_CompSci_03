@@ -31,11 +31,7 @@ class ActionItems(BaseModel):
 
 class RAG:
 
-    def __init__(
-            self,
-            n_dimensions: int = 400
-    ):
-        self.n_dimensions = n_dimensions
+    def __init__(self):
         self.logger = logging.getLogger(__name__)
         if "OPENAI_API_KEY" in os.environ:
             self.llm = ChatOpenAI(model=os.getenv("OPENAI_LLM_MODEL", "gpt-4o-mini"), temperature=0.2)

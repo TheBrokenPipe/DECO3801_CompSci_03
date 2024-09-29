@@ -6,7 +6,6 @@ from datetime import datetime
 
 from .file_manager import FileManager
 from .RAG import RAG
-from .docker_manager import DockerManager
 from models import *
 from access import *
 
@@ -14,15 +13,9 @@ from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
 
 class Manager:
 
-    def __init__(
-        self, n_dimensions: int = 400,
-        pg_manager: DockerManager = None
-    ):
-        # self.open_ai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
-
-        self.rag = RAG(n_dimensions)
-        self.pg_manager = pg_manager
+    def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self.rag = RAG()
 
     @staticmethod
     async def get_all_meetings() -> list[Meeting]:

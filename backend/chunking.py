@@ -10,16 +10,18 @@ from time import monotonic
 from langchain.docstore.document import Document
 from langchain_community.utils.math import cosine_similarity
 from langchain_ollama import OllamaEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
 from models import *
 
 class Chunks:
     def __init__(self):
-        # self.embeddings = OpenAIEmbeddings()
-        self.embeddings = OllamaEmbeddings(
-            model="nomic-embed-text",
-        )
         self.logger = logging.getLogger(__name__)
+
+        if "OPENAI_API_KEY" in os.environ:
+            self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+        else:
+            self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
     def get_embedding(self, text):
         embedding = self.embeddings.embed_documents(["clustering: " + text])[0]
