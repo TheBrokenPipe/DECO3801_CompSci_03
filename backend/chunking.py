@@ -108,8 +108,8 @@ class chunks:
         return chunks
 
 # test
-# file_path = "./data/transcripts/ES2002d.Mix-Headset_transcript.jsonl"
-file_path = "./data/ES2002d.Mix-Headset_transcript.jsonl"
+file_path = "data/transcripts/ES2002d.Mix-Headset_transcript.jsonl"
+# file_path = "data/ES2002d.Mix-Headset_transcript.jsonl"
 chunking = chunks()
 jsonl = chunking.load_jsonl_file(file_path)
 merged = chunking.merge_speaker_lines(jsonl)
