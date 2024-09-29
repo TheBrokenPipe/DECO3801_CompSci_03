@@ -9,7 +9,7 @@ from access import *
 from backend.ingestion import Ingestion
 
 logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 load_dotenv()
 

@@ -1,3 +1,9 @@
+import sys
+import os
+import logging
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from models import *
 import json
 from langchain.docstore.document import Document
 from langchain_community.utils.math import cosine_similarity
@@ -6,12 +12,13 @@ from langchain_ollama import OllamaEmbeddings
 
 from time import monotonic
 
-class chunks:
+class Chunks:
     def __init__(self):
         # self.embeddings = OpenAIEmbeddings()
         self.embeddings = OllamaEmbeddings(
             model="nomic-embed-text",
         )
+        self.logger = logging.getLogger(__name__)
 
     def get_embedding(self, text):
         embedding = self.embeddings.embed_documents(["clustering: " + text])[0]
@@ -78,7 +85,7 @@ class chunks:
                     doc = Document(
                         page_content=chunk_text,
                         metadata={
-                            "id": len(chunks),
+                            "chunk_id": len(chunks),
                             "start_time": current_start_time,
                             "end_time": end_time,
                             "filename": filename
@@ -97,7 +104,7 @@ class chunks:
             doc = Document(
                 page_content=chunk_text,
                 metadata={
-                    "id": len(chunks),
+                    "chunk_id": len(chunks),
                     "start_time": current_start_time,
                     "end_time": end_time,
                     "filename": filename
@@ -107,24 +114,35 @@ class chunks:
 
         return chunks
 
-# test
-file_path = "data/transcripts/ES2002d.Mix-Headset_transcript.jsonl"
-# file_path = "data/ES2002d.Mix-Headset_transcript.jsonl"
-chunking = chunks()
-jsonl = chunking.load_jsonl_file(file_path)
-merged = chunking.merge_speaker_lines(jsonl)
-# with open("merged.txt", "w", encoding="utf-8") as merged_file:
-#     for merge in merged:
-#         merged_file.write(str(merge) + "\n")
-# print("Merging done!")
+    def chunk_transcript(self, meeting: Meeting) -> List[Document]:
+        file_path = meeting.file_transcript
+        jsonl = self.load_jsonl_file(file_path)
+        merged = self.merge_speaker_lines(jsonl)
+        time = monotonic()
+        chunks = self.semantic_chunking(merged,file_path)
+        duration = monotonic() - time
+        self.logger.debug(f"Transcribed audio file in {duration:.3f}s - '{file_path}'")
+        return chunks
 
-for threshold in [0.5, 0.55, 0.6, 0.65]:
-    time = monotonic()
-    chunked = chunking.semantic_chunking(merged,file_path, threshold)
-    duration = monotonic() - time
-    print(f"Chunked at threshold {threshold:.2f} in {duration:.3f}s")
-    with open(f"chunks_{threshold:.2f}.txt", "w", encoding="utf-8") as chunks_file:
-        for doc in chunked:
-            #docstr = str(doc).replace("\n", " ")
-            chunks_file.write(str(doc) + "\n\n")
-print("Chunking done!")
+
+# # test
+# file_path = "data/transcripts/ES2002d.Mix-Headset_transcript.jsonl"
+# # file_path = "data/ES2002d.Mix-Headset_transcript.jsonl"
+# chunking = Chunks()
+# jsonl = chunking.load_jsonl_file(file_path)
+# merged = chunking.merge_speaker_lines(jsonl)
+# # with open("merged.txt", "w", encoding="utf-8") as merged_file:
+# #     for merge in merged:
+# #         merged_file.write(str(merge) + "\n")
+# # print("Merging done!")
+
+# for threshold in [0.5, 0.55, 0.6, 0.65]:
+#     time = monotonic()
+#     chunked = chunking.semantic_chunking(merged,file_path, threshold)
+#     duration = monotonic() - time
+#     print(f"Chunked at threshold {threshold:.2f} in {duration:.3f}s")
+#     with open(f"chunks_{threshold:.2f}.txt", "w", encoding="utf-8") as chunks_file:
+#         for doc in chunked:
+#             #docstr = str(doc).replace("\n", " ")
+#             chunks_file.write(str(doc) + "\n\n")
+# print("Chunking done!")

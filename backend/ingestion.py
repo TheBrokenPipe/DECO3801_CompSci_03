@@ -7,12 +7,25 @@ from models import *
 from access import *
 from .ASR import ASR
 from .manager import Manager
+from .chunking import Chunks
 
 class Ingestion:
     def __init__(self):
         self.manager = Manager()
         self.asr = ASR(os.environ['HF_TOKEN'])
+        self.chunks = Chunks()
         self.logger = logging.getLogger(__name__)
+
+    async def transcribe_next_meeting(self):
+        meetings = await select_many_from_table(Meeting,("Queued"),("status"))
+        if not len(meetings) > 0:
+            return
+        
+        meeting = meetings[0]
+        recording = meeting.file_recording
+        meeting.file_transcript = self.asr.transcribe_audio_file(recording)
+        meeting.status = "Transcribed"
+        await update_table(meeting)
 
     async def summarise_next_meeting(self):
         meetings = await select_many_from_table(Meeting,("Transcribed"),("status"))
@@ -50,23 +63,9 @@ class Ingestion:
             return
         
         meeting = meetings[0]
-        with open(meeting.file_transcript, 'r', encoding="utf-8") as file:
-            transcript = file.read()
-
-        # TODO: RAG chunking and embedding goes here
+        chunks = self.chunks.chunk_transcript(meeting)
+        
+        self.manager.rag.embed_meeting(meeting, chunks)
 
         meeting.status = "Ready"
         await update_table(meeting)
-            
-    async def transcribe_next_meeting(self):
-        meetings = await select_many_from_table(Meeting,("Queued"),("status"))
-        if not len(meetings) > 0:
-            return
-        
-        meeting = meetings[0]
-        recording = meeting.file_recording
-        meeting.file_transcript = self.asr.transcribe_audio_file(recording)
-        meeting.status = "Transcribed"
-        await update_table(meeting)
-    
-
