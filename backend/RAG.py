@@ -12,7 +12,7 @@ from pydantic import BaseModel, ValidationError
 from datetime import datetime
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnableLambda
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain.docstore.document import Document
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -127,6 +127,24 @@ class RAG:
         
         self.vector_store.add_documents(chunks)
 
+    def format_docs(self, docs):
+        return "\n\n".join(doc.page_content for doc in docs)
+
+    def query_retrieval(self, query_text):
+        retriever = self.vector_store.as_retriever()
+        system_prompt = "You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, say that you don't know. Do not include any general information unless necessary. Use three sentences maximum and keep the answer concise. \n\n Context: {context}"
+        prompt = ChatPromptTemplate.from_messages(
+            [("system",system_prompt,),
+                ("human", "{question}"),])
+
+        qa_chain = (
+            {"context": retriever | self.format_docs, "question": RunnablePassthrough()}
+            | prompt
+            | self.llm
+            | StrOutputParser()
+        )
+
+        return qa_chain.invoke(query_text)
 
     def query(self, query_text: str):
         with open(self.get_closest_docs(query_text)[0], 'r') as f:
@@ -140,18 +158,4 @@ class RAG:
         # user_prompt = f"Context: {context}\n\nQuestion: {query_text}""
         
         return self.invoke_llm(system_prompt, user_prompt)
-
-    def get_closest_indexes(self, embedding: np.ndarray, k=5) -> tuple[list[float], list[int]]:
-        """returns distances, indexes"""
-        # TODO verify / ensure size
-        return self.vdb_index.search(np.atleast_2d(embedding), k=k)
-
-
-    def get_docs_from_indexes(self, indexes: list):
-        return [self.link_db[str(i)] for i in indexes if i not in [str(-1), -1]]
-
-    def get_closest_docs(self, query_text: str, k=3):
-        embedding = self.embed_text(query_text)
-        distances, indexes = self.get_closest_indexes(embedding, k)
-        return self.get_docs_from_indexes(indexes[0])
 
