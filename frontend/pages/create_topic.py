@@ -14,9 +14,9 @@ with col2:
 
 topics = server.get_topics()
 
-with st.expander("Current Topics"):
-    for topic in topics:
-        st.write(topic.get_name())
+# with st.expander("Current Topics"):
+    # for topic in topics:
+        # st.write(topic.get_name())
 
 st.title("Create New Topic")
 
@@ -45,4 +45,9 @@ users = stt.st_tags(
 want_create = st.button("Create")
 
 if want_create:
-    server.create_topic(meeting_name, [], [])
+    wanted_meetings = []
+    for name in existing:
+        for meeting in existing_meetings:
+            if meeting.get_meeting_name().lower() == name.lower():
+                wanted_meetings.append(meeting)
+    server.create_topic(meeting_name, wanted_meetings, [])
