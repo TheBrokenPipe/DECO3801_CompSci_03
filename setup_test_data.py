@@ -50,7 +50,7 @@ def download_meetings(base_path: str):
     baseurl = "https://groups.inf.ed.ac.uk/ami/AMICorpusMirror/amicorpus/"
     # scenarios = ["ES2002","ES2003","ES2004","ES2005","ES2006","ES2007","ES2008","ES2009",]
     scenarios = ["ES2002","ES2003"]
-    meetings = ["a","b","c","d"]
+    meetings = ["a", "b", "c", "d"]
     for scenario in scenarios:
         for meeting in meetings:
             url = f"{baseurl}{scenario}{meeting}/audio/{scenario}{meeting}.Mix-Headset.wav"

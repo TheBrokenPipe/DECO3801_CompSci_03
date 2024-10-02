@@ -9,6 +9,7 @@ from .ASR import ASR
 from .manager import Manager
 from .chunking import Chunks
 
+
 class Ingestion:
     def __init__(self):
         self.manager = Manager()
@@ -17,7 +18,7 @@ class Ingestion:
         self.logger = logging.getLogger(__name__)
 
     async def transcribe_next_meeting(self):
-        meetings = await select_many_from_table(Meeting,("Queued"),("status"))
+        meetings = await select_many_from_table(Meeting, ["Queued"], "status")
         if not len(meetings) > 0:
             return
         
@@ -28,7 +29,7 @@ class Ingestion:
         await update_table(meeting)
 
     async def summarise_next_meeting(self):
-        meetings = await select_many_from_table(Meeting,("Transcribed"),("status"))
+        meetings = await select_many_from_table(Meeting, ["Transcribed"],("status"))
         if not len(meetings) > 0:
             return
     
@@ -58,7 +59,7 @@ class Ingestion:
         await update_table(meeting)
 
     async def ingest_next_meeting(self):
-        meetings = await select_many_from_table(Meeting,("Summarised"),("status"))
+        meetings = await select_many_from_table(Meeting, ["Summarised"],("status"))
         if not len(meetings) > 0:
             return
         
