@@ -20,6 +20,8 @@ st.write('Welcome! To start uploading your meeting, please give the meeting a un
 
 meeting_name = st.text_input("Enter the name of the meeting:")
 
+meeting_date = st.date_input("On what date did the event take place?", format="DD/MM/YYYY")
+
 uploaded_file = st.file_uploader("Upload Recording/Transcript", type=['mp3', 'mp4', 'txt', 'wav'])
 
 if uploaded_file is not None:
@@ -30,8 +32,16 @@ with col1:
     st.write("")
 
 with col2:
-    if st.button("Next"):
+    next1 = st.button("Next", key="NextFromUpload1")
+
+if next1:
+    if uploaded_file:
+        st.session_state["new_meeting_name"] = meeting_name
+        st.session_state["new_meeting_date"] = meeting_date
+        st.session_state["new_meeting_file"] = uploaded_file
         st.switch_page(pages["upload_meeting2"])
+    else:
+        st.warning("Please upload a main meeting file")
 
 # if st.button("Next", key = "next_buttonB"):
 #         st.session_state.page = "upload_page2"

@@ -1,9 +1,11 @@
 import streamlit as st
 import streamlit_tags as stt
 from index import pages
-from interface import server
+from interface import server, updateSummary
 
 # known issue: the warning about consent only occurs twice.
+
+default_password = "password123"
 
 if "tried_submit" not in st.session_state:
     st.session_state["tried_submit"] = False
@@ -20,7 +22,7 @@ userNames = list(map(lambda user: user.get_name(), server.get_users()))
 topicNames = list(map(lambda topic: topic.get_name(), server.get_topics()))
 
 # page content
-attendees = stt.st_tags(
+attendeeNames = stt.st_tags(
     label='Meeting attendees',
     text='Press enter to add more',
     value=[],
@@ -52,6 +54,31 @@ with col2:
 submit = col3.button("Submit", key="submit")
 
 if submit and consent:
+    # get information from upload form page 1
+    meeting_name = st.session_state["new_meeting_name"]
+    meeting_date = st.session_state["new_meeting_date"]
+    main_file = st.session_state["new_meeting_file"]
+
+    # get information from upload for page 2
+    supporting_file = st.session_state["new_meeting_supporting_file"]
+
+    # a helper function to get user if exist or crete a new one
+    def get_create_user(name):
+        result = server.get_user(name)
+        if (result is None):
+            # the user does not exist, so we create it
+            result = server.create_user(name, default_password)
+        return result
+
+    result = server.upload_meeting(
+        data=main_file.read(),
+        filename=main_file.name,
+        name=meeting_name,
+        date=meeting_date,
+        attendees=list(map(get_create_user, attendeeNames)),
+        callback=updateSummary
+    )
+
     st.switch_page(pages["chat"])
     st.session_state["tried_submit"] = False
 
