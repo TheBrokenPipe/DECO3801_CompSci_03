@@ -5,6 +5,9 @@ import os
 from psycopg import AsyncCursor
 from psycopg.sql import SQL
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class AccessBase:
 
@@ -15,8 +18,6 @@ class AccessBase:
         f"user={os.getenv('DB_USER')} "
         f"password={os.getenv('DB_PASSWORD')}"
     )
-
-    print("Access Loaded")
 
     pool = AsyncConnectionPool(
         connection_string,

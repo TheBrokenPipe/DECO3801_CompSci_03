@@ -26,7 +26,7 @@ class ASR:
         """Save JSONL transcript with speaker diarization of audio."""
         cache_file = Path(self.cache_dir) / (Path(file_path).stem + ".json")
         try:
-            with open(cache_file, 'r') as file:
+            with open(cache_file, 'r', encoding="utf-8") as file:
                 diarized = json.load(file)
         except FileNotFoundError:
             diarized = self.transcribe_audio_file_whisperx_raw(file_path)
@@ -51,22 +51,22 @@ class ASR:
         time = monotonic()
         audio = whisperx.load_audio(file_path)
         duration = monotonic() - time
-        self.logger.info(f"Loaded audio file in {duration:.3f} - '{file_path}'")
+        self.logger.debug(f"Loaded audio file in {duration:.3f} - '{file_path}'")
 
         time = monotonic()
         base_transcription = self.whisperx_transcribe(device, audio)
         duration = monotonic() - time
-        self.logger.info(f"Transcribed audio file in {duration:.3f}s - '{file_path}'")
+        self.logger.debug(f"Transcribed audio file in {duration:.3f}s - '{file_path}'")
 
         time = monotonic()
         aligned = self.whisperx_align(device, audio, base_transcription)
         duration = monotonic() - time
-        self.logger.info(f"Aligned audio file in {duration:.3f}s - '{file_path}'")
+        self.logger.debug(f"Aligned audio file in {duration:.3f}s - '{file_path}'")
 
         time = monotonic()
         diarized = self.whisperx_diarize(device, audio, aligned)
         duration = monotonic() - time
-        self.logger.info(f"Diarized audio file in {duration:.3f}s - '{file_path}'")
+        self.logger.debug(f"Diarized audio file in {duration:.3f}s - '{file_path}'")
 
         return diarized
 

@@ -1,223 +1,150 @@
-import faiss
-import numpy as np
-import json
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import logging
+
 from .file_manager import FileManager
-from bidict import bidict
-from openai import OpenAI
-from pydantic import BaseModel
-from datetime import datetime
+from models import *
+from utils import *
 
-open_ai_text_model = "gpt-4o-mini"
-open_ai_embedding_model = "text-embedding-3-small"
-
-
-class KeyPoint(BaseModel):
-    """
-    text: key / main point and important idea, finding, or topic that are crucial to the essence
-    """
-    text: str
-
+from pydantic import BaseModel, ValidationError
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain.docstore.document import Document
+from langchain_ollama import ChatOllama, OllamaEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_postgres import PGVector
 
 class KeyPoints(BaseModel):
     """
-    people: list of key points mentioned in text
+    key_points: list of key points mentioned in text
     """
-    key_points: list[KeyPoint]
-
-
-class ActionItem(BaseModel):
-    """
-    text: task, assignment or action that was agreed upon or mentioned as needing to be done.
-    assigned_people_names: list of names of people assigned to this task
-    due_date: date and/or time of when the task should be completed if found, else None
-    """
-    text: str
-    assigned_people_names: list[str]
-    due_date: str | None
+    key_points: list[str]
 
 
 class ActionItems(BaseModel):
     """
-    people: list of action items mentioned in text
+    action_items: list of action items mentioned in text
     """
-    action_items: list[ActionItem]
-
-
-class Speaker(BaseModel):
-    """
-    original_name: name of the speaker in the transcript
-    identified_name: name identified from the text
-    """
-    original_name: str
-    identified_name: str
-
-
-class IdentifiedSpeakers(BaseModel):
-    """
-    identified_speakers: list of speakers identified from text
-    """
-    identified_speakers: list[Speaker]
-
+    action_items: list[str]
 
 class RAG:
 
-    open_ai_text_model = "gpt-4o-mini"
-
-    def __init__(
-            self,
-            open_ai_client: OpenAI,
-            n_dimensions: int = 400
-    ):
-        self.open_ai_client = open_ai_client
-        self.n_dimensions = n_dimensions
-
-    def llm_completion(self, messages: list[dict]) -> str:
-        response = self.open_ai_client.chat.completions.create(
-            model=self.open_ai_text_model,
-            temperature=0,
-            messages=messages
-        )
-        return response.choices[0].message.content
-
-    def extract_specific_objects(self, text, model) -> dict:
-        system_prompt = [
-            {
-                "role": "system",
-                "content": f"You are tasked with finding objects in the text matching the provided model."
-            },
-            {
-                "role": "user",
-                "content": text
-            }
-        ]
-
-        response = self.open_ai_client.beta.chat.completions.parse(
-            model=self.open_ai_text_model,
-            messages=system_prompt,
-            response_format=model,
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        if "OPENAI_API_KEY" in os.environ:
+            self.llm = ChatOpenAI(model=os.getenv("OPENAI_LLM_MODEL", "gpt-4o-mini"), temperature=0.2)
+            self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+        else:
+            self.llm = ChatOllama(model=os.getenv("OLLAMA_MODEL", "llama3.1e"), temperature=0.2)
+            self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
+        
+        connection = f"postgresql+psycopg://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('HOSTNAME')}:{os.getenv('PORT')}/{os.getenv('DB_NAME')}"
+        
+        self.vector_store = PGVector(
+            embeddings=self.embeddings,
+            collection_name=os.environ.get("VECTOR_STORE_NAME", "deco3801"),
+            connection=connection,
+            use_jsonb=True,
         )
 
-        return json.loads(response.choices[0].message.content)
 
-    def identify_speakers(self, lines: list[dict]) -> list[dict]:
-        """
-        replaced SPEAKER_XX with names if they can be identified.
-        """
-        # print(text)
-        text = "\n".join(f"{line['speaker']}: {line['text']}" for line in lines)
-        id_speakers = IdentifiedSpeakers(**self.extract_specific_objects(text, IdentifiedSpeakers))
-        speaker_dict = {}
-        for speaker in id_speakers.identified_speakers:
-            speaker_dict[speaker.original_name] = speaker.identified_name
+    def invoke_llm(self, system_prompt: str, user_prompt: str) -> str:
+        prompt = ChatPromptTemplate.from_messages(
+            [("system","{system_prompt}",),
+                ("human", "{user_prompt}"),])
+        parser = StrOutputParser()
+        session = prompt | self.llm | parser
+        response = session.invoke({"system_prompt": system_prompt, "user_prompt": user_prompt})
+        return response
+    
+    @staticmethod
+    def check_none(model: BaseModel) -> BaseModel:
+        if model is None:
+            raise ValidationError
+        return model
 
-        for line in lines:
-            line["speaker"] = speaker_dict.get(line["speaker"], line["speaker"])
+    def extract_specific_objects(self, text, model):
+        prompt = ChatPromptTemplate.from_messages([
+            (
+                "system",
+                "You are an expert extraction algorithm. "
+                "Only extract relevant information from the text. "
+                "If you do not know the value of an attribute asked to extract, "
+                "return null for the attribute's value.",
+            ),
+            ("human","{text}")
+        ])
+        structured_llm = self.llm.with_structured_output(model) | RunnableLambda(self.check_none)
+        session = prompt | structured_llm.with_retry()
+        try:
+            response = session.invoke({"text":text})
+        except Exception as e:
+            response = None
+        return response
 
-        return lines
-
-    def embed_text(self, text: str) -> np.ndarray:
-        model_name = open_ai_embedding_model  # allows for dim def (unlike ada-002)
-        response = self.open_ai_client.embeddings.create(
-            input=text,
-            model=model_name,
-            dimensions=self.n_dimensions
-        )
-        return np.array(response.data[0].embedding)
-
-    def query(self, query_text: str):
-        with open(self.get_closest_docs(query_text)[0], 'r') as f:
-            context = f.read()
-
-        system_prompt = [
-            {
-                "role": "system",
-                "content": f"You are an assistant for question-answering tasks. "
-                           f"Use the following pieces of retrieved context to answer "
-                           f"the question. If you don't know the answer, say that you "
-                           f"don't know. Do not include any general information unless necessary\n\n"
-                           f"Use three sentences maximum and keep the answer concise. \n\n"
-                           f"{context}"
-            },
-            {
-                "role": "user",
-                "content": query_text
-            }
-        ]
-
-        return self.llm_completion(system_prompt)
-
-    def get_closest_indexes(self, embedding: np.ndarray, k=5) -> tuple[list[float], list[int]]:
-        """returns distances, indexes"""
-        # TODO verify / ensure size
-        return self.vdb_index.search(np.atleast_2d(embedding), k=k)
-
-    def _add_to_db(self, embedding: np.ndarray, file_path: str):
-        # TODO verify / ensure size
-        next_index = self.size
-        print(self.size)
-        self.vdb_index.add(np.atleast_2d(embedding))
-        self.link_db[str(next_index)] = file_path
-
-    def add_document(self, text: str, file_path: str):
-        embedding = self.embed_text(text)
-        self._add_to_db(embedding, file_path)
-
-    def get_docs_from_indexes(self, indexes: list):
-        return [self.link_db[str(i)] for i in indexes if i not in [str(-1), -1]]
-
-    def get_closest_docs(self, query_text: str, k=3):
-        embedding = self.embed_text(query_text)
-        distances, indexes = self.get_closest_indexes(embedding, k)
-        return self.get_docs_from_indexes(indexes[0])
 
     def abstract_summary_extraction(self, transcription):
-        return self.llm_completion(
-            [
-                {
-                    "role": "system",
-                    "content": "You are a highly skilled AI trained in language comprehension and summarization. "
-                               "I would like you to read the following text and summarize it into a concise abstract "
-                               "paragraph. Aim to retain the most important points, providing a coherent and readable "
-                               "summary that could help a person understand the main points of the discussion without "
-                               "needing to read the entire text. Please avoid unnecessary details or tangential points."
-                },
-                {
-                    "role": "user",
-                    "content": transcription
-                }
-            ]
-        )
+        transcript = jsonl_to_txt(transcription)
+        system_prompt = "You are a highly skilled AI trained in language comprehension and summarization. I would like you to read the following text and summarize it into a concise abstract paragraph. Aim to retain the most important points, providing a coherent and readable summary that could help a person understand the main points of the discussion without needing to read the entire text. Please avoid unnecessary details or tangential points."
+        summary = self.invoke_llm(system_prompt, transcript)
+        if isinstance(self.llm, ChatOllama) and summary[:4] == "Here":
+            summary = summary[summary.find("\n\n"):].strip()
+        return summary
 
     def key_points_extraction(self, transcription):
-        return self.extract_specific_objects(transcription, KeyPoints)
+        transcript = jsonl_to_txt(transcription)
+        return self.extract_specific_objects(transcript, KeyPoints)
 
     def action_item_extraction(self, transcription):
-        return self.extract_specific_objects(transcription, ActionItems)
-
-    def sentiment_analysis(self, transcription):
-        return self.llm_completion(
-            [
-                {
-                    "role": "system",
-                    "content": "As an AI with expertise in language and emotion analysis, "
-                               "your task is to analyze the sentiment of the following text. "
-                               "Please consider the overall tone of the discussion, "
-                               "the emotion conveyed by the language used, and the context in which words and "
-                               "phrases are used. Indicate whether the sentiment is generally positive, negative, "
-                               "or neutral, and provide brief explanations for your analysis where possible."
-                },
-                {
-                    "role": "user",
-                    "content": transcription
-                }
-            ]
-        )
+        transcript = jsonl_to_txt(transcription)
+        return self.extract_specific_objects(transcript, ActionItems)
 
     def summarise_meeting(self, transcription) -> dict:
         return {
             'abstract_summary': self.abstract_summary_extraction(transcription),
             'key_points': self.key_points_extraction(transcription),
             'action_items': self.action_item_extraction(transcription),
-            # 'sentiment': self.sentiment_analysis(transcription)
         }
+    
+    def embed_meeting(self, meeting: Meeting, chunks: list[Document]):
+        for doc in chunks:
+            if isinstance(self.embeddings, OllamaEmbeddings):
+                doc.page_content = "search_document: " + doc.page_content
+            doc.metadata["meeting_id"] = meeting.id
+        
+        self.vector_store.add_documents(chunks)
+
+    def format_docs(self, docs):
+        return "\n\n".join(doc.page_content for doc in docs)
+
+    def query_retrieval(self, query_text):
+        retriever = self.vector_store.as_retriever()
+        system_prompt = "You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, say that you don't know. Do not include any general information unless necessary. Use three sentences maximum and keep the answer concise. \n\n Context: {context}"
+        prompt = ChatPromptTemplate.from_messages(
+            [("system",system_prompt,),
+                ("human", "{question}"),])
+
+        qa_chain = (
+            {"context": retriever | self.format_docs, "question": RunnablePassthrough()}
+            | prompt
+            | self.llm
+            | StrOutputParser()
+        )
+
+        return qa_chain.invoke(query_text)
+
+    def query(self, query_text: str):
+        with open(self.get_closest_docs(query_text)[0], 'r') as f:
+            context = f.read()
+
+        system_prompt = f"You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, say that you don't know. Do not include any general information unless necessary. Use three sentences maximum and keep the answer concise. \n\n Context: {context}"
+        user_prompt = query_text
+
+        # Alternative prompts with context in user prompt rather than system prompt
+        # system_prompt = "You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, say that you don't know. Do not include any general information unless necessary. Use three sentences maximum and keep the answer concise."
+        # user_prompt = f"Context: {context}\n\nQuestion: {query_text}""
+        
+        return self.invoke_llm(system_prompt, user_prompt)
+

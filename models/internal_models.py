@@ -13,6 +13,7 @@ class MeetingCreation(BaseModel):
     file_recording: str
     file_transcript: str
     summary: str
+    status: str
 
 
 class KeyPointCreation(BaseModel):
@@ -30,6 +31,7 @@ class ActionItemCreation(BaseModel):
 class TagCreation(BaseModel):
     __db_model__ = Tag
     name: str
+    last_modified: datetime
 
 
 class MeetingTagCreation(BaseModel):
@@ -38,8 +40,8 @@ class MeetingTagCreation(BaseModel):
     tag_id: int
 
 
-class DocumentCreation(BaseModel):
-    __db_model__ = Document
+class DocCreation(BaseModel):
+    __db_model__ = Doc
     meeting_id: int
     metadata: dict
     text: str

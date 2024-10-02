@@ -1,9 +1,3 @@
-import os
-import json
-from bidict import bidict
-from faiss import IndexFlatL2, write_index, read_index
-from typing import Union
-
 
 class FileManager:
 

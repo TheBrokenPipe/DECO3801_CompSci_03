@@ -1,34 +1,21 @@
 import os
-import faiss
-from openai import OpenAI
-from typing import Union
-from datetime import datetime
 import sys
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import logging
+from datetime import datetime
+
 from .file_manager import FileManager
 from .RAG import RAG
-from .ASR import ASR
-from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
-from .docker_manager import DockerManager
 from models import *
 from access import *
-import logging
-from pathlib import Path
+
+from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
 
 class Manager:
 
-    def __init__(
-        self, n_dimensions: int = 400,
-        pg_manager: DockerManager = None
-    ):
-        self.open_ai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
-        self.vdb_index: Union[faiss.IndexFlatL2, None] = None
-
-        self.rag = RAG(self.open_ai_client)
-        self.asr = ASR(os.environ['HF_TOKEN'])
-        self.pg_manager = pg_manager
+    def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self.rag = RAG()
 
     @staticmethod
     async def get_all_meetings() -> list[Meeting]:
@@ -40,7 +27,7 @@ class Manager:
 
     @staticmethod
     async def create_tag(name, meetings: list[Meeting]) -> Tag:
-        tag = await insert_into_table(TagCreation(name=name), always_return_list=False)
+        tag = await insert_into_table(TagCreation(name=name,last_modified=datetime.now()), always_return_list=False)
         print(f"Tag added: {tag.name}")
         await Manager.add_meetings_to_tag(tag, meetings)
         print(f"Meetings added")
@@ -56,11 +43,20 @@ class Manager:
                 date=date,
                 file_recording=file_recording,
                 file_transcript=file_transcript,
-                summary=summary
+                summary=summary,
+                status = "Queued"
             ), always_return_list=False
         )
         print(f"Meeting added: {meeting.name}")
         return meeting
+
+    @staticmethod
+    async def create_action_item(item: str, meeting: Meeting):
+        return await insert_into_table(ActionItemCreation(text=item, meeting_id=meeting.id))
+
+    @staticmethod
+    async def create_key_point(point: str, meeting: Meeting):
+        return await insert_into_table(KeyPointCreation(text=point, meeting_id=meeting.id))
 
     @staticmethod
     async def add_meetings_to_tag(tag: Tag, meetings: Meeting | list[Meeting]) -> list[MeetingTag]:
@@ -120,12 +116,3 @@ class Manager:
     def query(self, query_text: str):
         return self.rag.query(query_text)
     
-    async def ingest_meeting(self):
-        meetings = await select_many_from_table(Meeting,(""),("file_transcript"))
-        if len(meetings) > 0:
-            meeting = meetings[0]
-            recording = meeting.file_recording
-            meeting.file_transcript = self.asr.transcribe_audio_file(recording)
-            
-            await update_table(meeting)
-
