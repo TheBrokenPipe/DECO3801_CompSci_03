@@ -1,7 +1,16 @@
 from __future__ import annotations
 from typing import List
 import datetime
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+import asyncio
+from backend.manager import Manager
+import models
+from access import *
+
+manager = Manager()
 
 class Server:
     def __init__(this) -> None:
@@ -38,58 +47,71 @@ class Server:
 
     def get_meetings(this) -> list[Meeting]:
 #ifdef BACKEND
-        # meetings = []
-        # for meeting in Manager.get_all_meetings():
-            # meetings.append(Meeting(meeting))
+        meetings = []
+        for meeting in Manager.get_all_meetings():
+            meetings.append(Meeting(meeting))
+        return meetings
 #else
-        return this.meetings.copy()
+        # return this.meetings.copy()
 #endif
 
     def create_topic(this, name: str, meetings: list[Meeting], users: list[User]) -> Topic:
 #ifdef BACKEND
-        # result = Tpoic(Manager.create_tag(name, meetings))
+        result = Topic(asyncio.run(manager.create_tag(name, meetings)))
 #else
-        result = Topic(name, meetings, users)
-        this.topics.append(result)
+        # result = Topic(name, meetings, users)
+        # this.topics.append(result)
 #endif
         return result
 
     def get_topics(this) -> list[Topic]:
-        return this.topics.copy()
+#ifdef BACKEND
+        topics = []
+        for topic in asyncio.run(manager.get_all_tags()):
+            topics.append(Topic(topic))
+        return topics
+#else
+        # return this.topics.copy()
+#endif
+
 
 class Topic:
 #ifdef BACKEND
-   # def __init__(this, tag: Tag) -> None:
-       # this._tag = tag
-       # this.users = users.copy()
-       # this.last_modified = datetime.datetime.now()
-       # this.summary = "AI-generated summary for all meeting under this topic..."
-       # this.action_items = ["Eat", "Sleep", "Die"]
-#endif
-        
-    def __init__(this, name: str, meetings: list[Meeting], users: list[User]) -> None:
-        this.name = name
-        this.meetings = meetings.copy()
+    def __init__(this, tag: models.Tag) -> None:
+        this._tag = tag
         this.users = users.copy()
         this.last_modified = datetime.datetime.now()
         this.summary = "AI-generated summary for all meeting under this topic..."
         this.action_items = ["Eat", "Sleep", "Die"]
 
-        for meeting in this.meetings:
-            meeting._link_topic(this)
+#else
+        
+    # def __init__(this, name: str, meetings: list[Meeting], users: list[User]) -> None:
+    #     this.name = name
+    #     this.meetings = meetings.copy()
+    #     this.users = users.copy()
+    #     this.last_modified = datetime.datetime.now()
+    #     this.summary = "AI-generated summary for all meeting under this topic..."
+    #     this.action_items = ["Eat", "Sleep", "Die"]
+
+    #     for meeting in this.meetings:
+    #         meeting._link_topic(this)
+
+#endif
 
     def get_name(this) -> str:
 #ifdef BACKEND
-        # return this._tag.name
+        return this._tag.name
 #else
-        return this.name
+        # return this.name
 #endif
 
     def set_name(this, name: str) -> None:
 #ifdef BACKEND
-        # this._tag.name = name
+        this._tag.name = name
+        update_table(this._tag)
 #else
-        this.name = name
+        # this.name = name
 #endif
 
     def get_meetings(this) -> Meeting:
@@ -353,23 +375,23 @@ else:
 def updateSummary(currentSummary, actionItems):
     return (currentSummary, actionItems)
 
-topic = server.create_topic("Executive Meetings", [], [user])
-exec1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Executive Meeting", datetime.datetime.now(), [user], updateSummary)
-exec2 = server.upload_meeting(b'Hello World!', "meeting.txt", "Second Executive Meeting", datetime.datetime.now(), [user], updateSummary)
-topic.add_meeting(exec1)
-topic.add_meeting(exec2)
-topic2 = server.create_topic("Marketing Meetings", [], [user])
-mark1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Marketing Meeting", datetime.datetime.now(), [user], updateSummary)
-mark2 = server.upload_meeting(b'Hello World!', "meeting.txt", "Second Marketing Meeting", datetime.datetime.now(), [user], updateSummary)
-topic2.add_meeting(mark1)
-topic2.add_meeting(mark2)
+# topic = server.create_topic("Executive Meetings", [], [user])
+# exec1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Executive Meeting", datetime.datetime.now(), [user], updateSummary)
+# exec2 = server.upload_meeting(b'Hello World!', "meeting.txt", "Second Executive Meeting", datetime.datetime.now(), [user], updateSummary)
+# topic.add_meeting(exec1)
+# topic.add_meeting(exec2)
+# topic2 = server.create_topic("Marketing Meetings", [], [user])
+# mark1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Marketing Meeting", datetime.datetime.now(), [user], updateSummary)
+# mark2 = server.upload_meeting(b'Hello World!', "meeting.txt", "Second Marketing Meeting", datetime.datetime.now(), [user], updateSummary)
+# topic2.add_meeting(mark1)
+# topic2.add_meeting(mark2)
 
-chat = Chat(user, [topic])
-user.add_chat(chat)
-chat2 = Chat(user, [topic2])
-user.add_chat(chat2)
+# chat = Chat(user, [topic])
+# user.add_chat(chat)
+# chat2 = Chat(user, [topic2])
+# user.add_chat(chat2)
 
-chat.query(Message(chat.get_user(), "What's my name?"))
-chat.query(Message(chat.get_user(), "How are you?"))
-chat2.query(Message(chat.get_user(), "How much money did we get?"))
-chat2.query(Message(chat.get_user(), "When is this due?"))
+# chat.query(Message(chat.get_user(), "What's my name?"))
+# chat.query(Message(chat.get_user(), "How are you?"))
+# chat2.query(Message(chat.get_user(), "How much money did we get?"))
+# chat2.query(Message(chat.get_user(), "When is this due?"))

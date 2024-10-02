@@ -1,15 +1,10 @@
-import faiss
-import numpy as np
 import os
-from bidict import bidict
 from openai import OpenAI
 from pydantic import BaseModel
 import json
-from datetime import datetime
 from dotenv import load_dotenv
-from typing import Union
-from docker_manager import DockerManager
-from database_manager import DB_Manager
+from backend.docker_manager import DockerManager
+from backend.database_manager import DB_Manager
 
 load_dotenv()
 open_ai_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])

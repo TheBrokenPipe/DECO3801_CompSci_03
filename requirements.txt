@@ -1,12 +1,13 @@
-numpy
 typing
-bidict
-openai==1.40.0
-faiss-cpu
 streamlit
-# langchain
+streamlit-tags
+
+langchain
+langchain_ollama
+langchain_openai
+langchain_postgres
+
 python-dotenv
 docker
 psycopg[binary]
 git+https://github.com/Hasan-Naseer/whisperX.git@caa7121
-streamlit-tags

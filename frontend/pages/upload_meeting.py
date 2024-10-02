@@ -8,7 +8,7 @@ from index import pages
 
 want_back = None
 
-col1, col2 = st.columns([6, 1], gap = "large", vertical_alignment="center")
+col1, col2 = st.columns([6, 1], gap="large", vertical_alignment="center")
 with col1:
     want_back = st.button('← Back')
 

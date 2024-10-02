@@ -53,6 +53,6 @@ with col2.expander("Recent Meetings", expanded=True):
             )
         )
         bcol1, bcol2, bcol3 = meetingContainer.columns(3)  # button columns
-        bcol1.button(key=random.randint(0, 10000), label="Media")
-        bcol2.button(key=random.randint(10000, 20000), label="Transcript")
-        bcol3.button(key=random.randint(20000, 30000), label="Remove")
+        bcol1.button("Media")
+        bcol2.button("Transcript")
+        bcol3.button("Remove")

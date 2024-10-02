@@ -2,36 +2,44 @@ import streamlit as st
 from interface import *
 from index import pages
 
+print("Loading Chat")
+
 def btn_click(index):
     st.session_state["current_chat"] = index
-
+print(1)
 user = server.get_user("user")
 if user is None:
     user = server.create_user("user", "p@ssword")
 
+print(2)
 chats = user.get_chats()
+print(3)
 
 chat_names = []
 for chat in chats:
     chat_names.append(chat.get_topics()[0].get_name())
+print(4)
 
 if "current_chat" not in st.session_state:
     st.session_state["current_chat"] = 0
+print(5)
 
 want_upload = None
 want_topic = None
+# st.button("testBUTN", key=f"Test")
 
 with st.sidebar:
     st.title("Chats")
 
     with st.expander("Chats", True):
-        for i in range(len(chat_names)):
+        print("Setting Chats")
+        for i, chat_name in enumerate(chat_names):
             # create a button that will change the current chat to the ith chat
-            st.sidebar.button(chat_names[i], on_click=btn_click, args=[i], key=str(i))
+            st.button(chat_name, on_click=btn_click, kwargs={"index": i})
     st.divider()
     with st.expander("Actions", True):
-        want_upload = st.sidebar.button("Upload Meeting")
-        want_topic = st.sidebar.button("Create Topic")
+        want_upload = st.button("Upload Meeting")
+        want_topic = st.button("Create Topic")
 
 st.title(chat_names[st.session_state["current_chat"]])
 
@@ -43,7 +51,7 @@ container = st.container(border=True, height=300)
 for message in chats[st.session_state["current_chat"]].get_messages():
     container.chat_message(message.get_sender().get_name()).markdown(message.get_text())
 
-col1, col2 = st.columns([18,100]) 
+col1, col2 = st.columns([18, 100])
 
 chat_input = None
 want_summary = None
@@ -69,3 +77,4 @@ if want_upload:
 
 if want_topic:
     st.switch_page(pages["create_topic"])
+

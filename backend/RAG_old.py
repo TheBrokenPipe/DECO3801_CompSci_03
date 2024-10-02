@@ -2,7 +2,7 @@ import faiss
 import numpy as np
 import json
 import os
-from file_manager import FileManager
+from .file_manager import FileManager
 from bidict import bidict
 from openai import OpenAI
 from pydantic import BaseModel
@@ -30,11 +30,11 @@ class ActionItem(BaseModel):
     """
     text: task, assignment or action that was agreed upon or mentioned as needing to be done.
     assigned_people_names: list of names of people assigned to this task
-    due_date: date and/or time of when the task should be completed
+    due_date: date and/or time of when the task should be completed if found, else None
     """
     text: str
     assigned_people_names: list[str]
-    due_date: str
+    due_date: str | None
 
 
 class ActionItems(BaseModel):
@@ -58,7 +58,6 @@ class IdentifiedSpeakers(BaseModel):
     identified_speakers: list of speakers identified from text
     """
     identified_speakers: list[Speaker]
-
 
 
 class RAG:
