@@ -24,5 +24,6 @@ with col2:
 
 with col3:
     if st.button("Next"):
+        st.session_state["new_meeting_supporting_file"] = uploaded_file
         st.switch_page(pages["upload_meeting3"])
 
