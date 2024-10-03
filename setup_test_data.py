@@ -45,7 +45,7 @@ def download(url: str, filename: str, desc: str):
                     f.write(chunk)
 
 
-def download_meetings(base_path: str):
+def download_meetings_scenarios(base_path: str):
     print("Downloading meetings... ")
     baseurl = "https://groups.inf.ed.ac.uk/ami/AMICorpusMirror/amicorpus/"
     # scenarios = ["ES2002","ES2003","ES2004","ES2005","ES2006","ES2007","ES2008","ES2009",]
@@ -59,6 +59,16 @@ def download_meetings(base_path: str):
             download(url, filename, description)
     print("Done")
 
+def download_meetings(base_path: str):
+    print("Downloading meetings... ")
+    baseurl = "https://groups.inf.ed.ac.uk/ami/AMICorpusMirror/amicorpus/"
+    meetings = ["ES2002a", "ES2002b", "ES2002c", "ES2002d","EN2002a","EN2002b","EN2002c","EN2002d","EN2006a","EN2006b"]
+    for meeting in meetings:
+        url = f"{baseurl}{meeting}/audio/{meeting}.Mix-Headset.wav"
+        filename = f"{base_path}{meeting}.Mix-Headset.wav"
+        description = f"Downloading {meeting}.Mix-Headset.wav"
+        download(url, filename, description)
+    print("Done")
 
 async def create_meetings(base_path: str):
     print("Creating meetings... ")
@@ -83,7 +93,7 @@ async def create_meetings(base_path: str):
             tag_meetings = list(filter(lambda meeting: meeting.name[:6]==tag_name, meetings))
             await t.create_tag(tag_name, tag_meetings)
     print("Done")
-        
+
 
 def main():
     base_dir = "data/recordings/"
