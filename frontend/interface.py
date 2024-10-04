@@ -7,6 +7,7 @@ import asyncio
 from backend.manager import Manager
 from access import *
 from models import *
+from streamlit.runtime.uploaded_file_manager import UploadedFile
 from setup_test_data import setup_test_data1
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -17,43 +18,51 @@ manager = Manager()
 
 class Server:
 
-    def __init__(self) -> None:
-        self.topics = []
-        self.users = []
-        self.meetings = []
-        self.chats = []
+    @staticmethod
+    async def get_all_meetings() -> list[Meeting]:
+        return [Meeting(m) for m in await select_many_from_table(DB_Meeting)]
 
-    def upload_meeting(self, data: bytes, filename: str, name: str, date: datetime, attendees: list[User], callback: callable) -> Meeting:
+    @staticmethod
+    async def get_all_topics() -> list[Topic]:
+        return [Topic(t) for t in await select_many_from_table(DB_Tag)]
 
-        # result = Meeting(id=rand(), date=date, name=name, file_recording=filename, file_transcript=None, summary=None)
+    @staticmethod
+    async def get_all_chats() -> list[Chat]:
+        return [Chat(c) for c in await select_many_from_table(DB_Chat)]
 
-        result = Meeting(data, filename, name, date, attendees, callback)
-        self.meetings.append(result)
-        return result
+    @staticmethod
+    async def get_chat_by_id(id):
+        return Chat(await select_from_table(DB_Chat, id))
 
-    def get_meetings(self) -> list[Meeting]:
-        meetings = []
-        for meeting in Manager.get_all_meetings():
-            meetings.append(Meeting(meeting))
-        return meetings
+    @staticmethod
+    async def upload_meeting(name: str, date: datetime, file: UploadedFile) -> Meeting:
+        filename = "data/recordings/" + file.name
+        with open(filename, "wb") as audiofile:
+            audiofile.write(file.read())
+        return Meeting(
+            await insert_into_table(
+                DB_Meeting(
+                    name=name,
+                    date=date,
+                    file_recording=filename,
+                    file_transcript="file_transcript",
+                    summary="",
+                ), always_return_list=False
+            )
+        )
 
-    def get_chats(self) -> list[Chat]:
-        return self.chats
-
-        # return self.meetings
-
-    async def create_chat(self, name: str) -> Chat:
-        chat = Chat(
+    @staticmethod
+    async def create_chat(name: str) -> Chat:
+        return Chat(
             await insert_into_table(
                 DB_Chat(
                     name=name
                 )
             )
         )
-        self.chats.append(chat)
-        return chat
 
-    async def create_topic(self, name: str, meetings: list[Meeting]) -> Topic:
+    @staticmethod
+    async def create_topic(name: str, meetings: list[Meeting]) -> Topic:
         return Topic(
             await insert_into_table(
                 DB_Tag(
@@ -61,59 +70,27 @@ class Server:
                 )
             )
         )
-        result = Topic(asyncio.run(manager.create_tag(name, meetings)))
-
-        # result = Topic(name, meetings, users)
-        # self.topics.append(result)
-
-        return result
-
-
-    def get_topics(self) -> list[Topic]:
-
-        topics = []
-        for topic in asyncio.run(manager.get_all_tags()):
-            topics.append(Topic(topic))
-        return topics
-
-        # return self.topics
 
 
 class Topic:
     def __init__(self, tag: DB_Tag) -> None:
         self._tag = tag
-        self.last_modified = datetime.now()
-        self.summary = "AI-generated summary for all meeting under self topic..."
-        self.action_items = ["Eat", "Sleep", "Die"]
+        # self.last_modified = datetime.now()
+        # self.summary = "AI-generated summary for all meeting under self topic..."
+        # self.action_items = ["Eat", "Sleep", "Die"]
 
-        
-    # def __init__(self, name: str, meetings: list[Meeting], users: list[User]) -> None:
-    #     self.name = name
-    #     self.users = users
-    #     self.last_modified = datetime.now()
-    #     self.summary = "AI-generated summary for all meeting under self topic..."
-    #     self.action_items = ["Eat", "Sleep", "Die"]
-
-    #     for meeting in self.meetings:
-    #         meeting._link_topic(self)
-
-
-    def get_name(self) -> str:
+    @property
+    def name(self) -> str:
         return self._tag.name
 
-    def set_name(self, name: str) -> None:
-        self._tag.name = name
-        update_table(self._tag)
-        # self.name = name
+    @name.setter
+    async def set_name(self, value: str) -> None:
+        self._tag.name = value
+        self._tag = await update_table_from_model(self._tag)
 
     @property
     def meetings(self):
-        return select_with_joins(self._tag.name, [DB_MeetingTag, DB_Meeting], )
-
-    def get_meetings(self) -> list[Meeting]:
-        return Meeting()
-        # return Meeting(Manager.get_tag_meetings(self._tag))
-        return self.meetings
+        return select_with_joins(self._tag.name, [DB_MeetingTag, DB_Meeting])
 
     async def add_meeting(self, meeting: DB_Meeting) -> None:
         await insert_into_table(
@@ -141,53 +118,38 @@ class Topic:
 
 
 class Meeting:
-    def __init__(self, data: bytes, filename: str, name: str, date: datetime, attendees: list[User], callback: callable) -> None:
-
-        # self._obj = backend.Meeting(id=rand(), date=date, name=name, file_recording=filename, file_transcript=None, summary=None)
-
-        self.data = data
-        self.filename = filename
-        self.name = name
-        self.date = date
-        self.transcript = "self is the meeting transcript..."
-        self.summary = "AI-generated summary for self particular meeting..."
-
-        self.action_items = ["Thing 1", "Thing 2", "Thing 3"]
-        self.summary, self.action_items = callback(self.summary, self.action_items)
-
-        self._topics = []
+    def __init__(self, meeting: DB_Meeting) -> None:
+        self._meeting = meeting
+        pass
 
     def get_transcript(self: Meeting) -> str:
-
-        # return self._obj.file_transcript
-
-        return self.transcript
+        return self._meeting.file_transcript
 
     def get_original_upload(self: Meeting) -> tuple[bytes, str]:
-        return (self.data, self.filename)
+        return self._meeting.file_recording
 
     def get_meeting_date(self: Meeting) -> datetime:
-        # return self._obj.date
-        return self.date
+        return self._meeting.date
 
-    def set_meeting_date(self: Meeting, date: datetime) -> None:
-        # self._obj.date = date
-        self.date = date
-
-    def get_topics(self: Meeting) -> list[Topic]:
-        # TODO: Manager.get_meeting_tags(meeting)
-        return self._topics
+    @property
+    async def topics(self: Meeting) -> list[Topic]:
+        return [
+            Topic(t) for t in await select_with_joins(
+                self._meeting.id, [DB_Meeting, DB_MeetingTag, DB_Tag]
+            )
+        ]
 
     def get_meeting_summary(self: Meeting) -> str:
+        return self._meeting.summary
 
-        # return self._obj.summary
-
-        return self.summary
-
-
-    def get_meeting_action_items(self: Meeting) -> list[str]:
-        # TODO: @Rick API or field?
-        return self.action_items
+    @property
+    async def action_items(self: Meeting) -> list[str]:
+        return ["ACTION!!!"]
+        return [
+            Topic(t) for t in await select_with_joins(
+                self._meeting.id, [DB_Meeting, DB_MeetingTag, DB_Tag]
+            )
+        ]
 
     def _link_topic(self: Meeting, topic: Topic) -> None:
         if topic not in self._topics:
@@ -209,20 +171,33 @@ class Chat:
         self.summary = "Summary for all meetings in all selected topics..."
         self.action_items = ["Hi", "Hello", "G'day"]
 
-    def get_messages(self) -> list[Message]:
-        return self.messages
+    @property
+    def id(self):
+        return self._chat.id
 
-    def delete_message(self, message: Message) -> None:
-        self.messages.remove(message)
+    @property
+    def name(self):
+        return self._chat.name
 
-    def get_topics(self) -> list[Topic]:
-        return self.topics
+    @property
+    def history(self):
+        return self._chat.history
 
-    def query(self, message: Message) -> Message:
-        self.messages.append(message)
-        resp = Message("assistant", "You asked: " + message.get_text())
-        self.messages.append(resp)
-        return resp
+    async def add_message(self, username, message):
+        self._chat.history.append(
+            {
+                "username": username,
+                "message": message
+            }
+        )
+        return await update_table_from_model(self._chat)
+
+    async def topics(self) -> list[Topic]:
+        return [
+            Topic(t) for t in await select_with_joins(
+                self._chat.id, [DB_Chat, DB_MeetingTag, DB_Tag]
+            )
+        ]
 
     def get_summary(self) -> str:
         return self.summary
@@ -232,42 +207,6 @@ class Chat:
 
     def __str__(self) -> str:
         return self.user.get_name() + "'s chat"
-
-
-class Message:
-    def __init__(self, sender: str, text: str) -> None:
-        self.sender = sender
-        self.text = text
-        self.time = datetime.now()
-
-    def get_sender(self):
-        return self.sender
-
-    def get_time(self) -> datetime:
-        return self.time
-
-    def get_text(self) -> str:
-        return self.text
-
-    def __str__(self) -> str:
-        return self.sender.get_name() + ": " + self.text
-
-# def updateSummary(currentSummary, actionItems):
-    # print("Current summary is: " + currentSummary)
-    # print("Current action items are: " + str(actionItems))
-    # newSummary = input("New summary (or ENTER to accept current one):")
-    # if newSummary == "":
-        # newSummary = currentSummary
-    # newActionItems = []
-    # print("New action items (empty line to stop entering):")
-    # while True:
-        # item = input("")
-        # if item == "":
-            # break
-        # newActionItems.append(item)
-    # if len(newActionItems) == 0:
-        # newActionItems = actionItems
-    # return (newSummary, actionItems)
 
 
 # server = Server()
@@ -282,4 +221,4 @@ server = Server()
 def updateSummary(currentSummary, actionItems):
     return (currentSummary, actionItems)
 
-asyncio.run(setup_test_data1(server))
+# asyncio.run(setup_test_data1(server))

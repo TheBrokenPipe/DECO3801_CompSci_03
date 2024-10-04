@@ -1,16 +1,15 @@
 import streamlit as st
 from interface import *
-from index import pages
 import streamlit_tags as stt
 
 col1, col2 = st.columns([6, 1], gap = "large", vertical_alignment="center")
 with col1:
     if st.button('← Back'):
-        st.switch_page(pages["upload_meeting"])
+        st.switch_page("pages/upload_meeting.py")
 
 with col2:
     if st.button('Help'):
-        st.switch_page(pages["help"])
+        st.switch_page("pages/help.py")
 
 topics = server.get_topics()
 

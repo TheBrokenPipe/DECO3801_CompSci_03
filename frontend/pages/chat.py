@@ -1,91 +1,69 @@
+import time
 import streamlit as st
-from interface import *
-# TODO fix this, it imports interface everytime
-from index import pages
+import asyncio
+from interface import Server
 
 print("Loading Chat")
 
-st.markdown(
-    """
-    <style>
-    .full-height {
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 def btn_click(index):
-    st.session_state["current_chat"] = index
+    st.session_state["current_chat_id"] = index
 
 
-chats = server.get_chats()
-print(chats)
+chats = asyncio.run(Server.get_all_chats())
+# print(chats[0].history)
+if len(chats) == 0:
+    asyncio.run(Server.create_chat("First Chat"))
+    chats = asyncio.run(Server.chats)
 
-chat_names = []
-for chat in chats:
-    chat_names.append(chat._chat.name)
+# chat_names = []
+# for chat in chats:
+#     chat_names.append(chat._chat.name)
 
-if "current_chat" not in st.session_state:
-    st.session_state["current_chat"] = 0
+if "current_chat_id" not in st.session_state:
+    st.session_state["current_chat_id"] = chats[0].id
 
-want_upload = None
-want_topic = None
-# st.button("testBUTN", key=f"Test")
+current_chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
+st.title(current_chat.name)
+container = st.container(border=True)
+
+for message in current_chat.history:
+    # print(message)
+    container.chat_message(message["username"]).markdown(message["message"])
+
 
 with st.sidebar:
     st.title("Chats")
 
     with st.expander("Chats", True):
-        for i, chat_name in enumerate(chat_names):
-            st.button(chat_name, on_click=btn_click, kwargs={"index": i})
+        for chat in chats:
+            st.button(chat.name, on_click=btn_click, kwargs={"index": chat.id})
     st.divider()
     with st.expander("Actions", True):
         want_upload = st.button("Upload Meeting")
         want_topic = st.button("Create Topic")
 
-print(chat_names)
-print(st.session_state["current_chat"])
-
-st.title(chat_names[st.session_state["current_chat"]])
-
-# constants
-CHAT_PROMPT = "Ask a question about your meetings"  # TODO: confirm with group
-
-container = st.container(border=True, height=300)
-container.markdown('<div class="full-height">', unsafe_allow_html=True)
-
-for message in chats[st.session_state["current_chat"]].get_messages():
-    container.chat_message(message.get_sender().get_name()).markdown(message.get_text())
 
 col1, col2 = st.columns([18, 100])
-
-chat_input = None
-want_summary = None
 
 with col1:
     want_summary = st.button("Summary")
 
 with col2:
-    chat_input = st.chat_input(CHAT_PROMPT)
+    chat_input = st.chat_input("Ask a question about your meetings")
 
 # React to user input
 if chat_input:
-    msg = Message(chats[st.session_state["current_chat"]].get_user(), chat_input)
-    container.chat_message(msg.get_sender().get_name()).markdown(msg.get_text())
-    resp = chats[st.session_state["current_chat"]].query(msg)
-    container.chat_message(resp.get_sender().get_name()).markdown(resp.get_text())
+    asyncio.run(current_chat.add_message("User", chat_input))
+    container.chat_message("User").markdown(chat_input)
+    asyncio.run(current_chat.add_message("Assistant", chat_input))
+    container.chat_message("Assistant").markdown(chat_input)
 
 if want_summary:
-    st.switch_page(pages["summary"])
+    st.switch_page("pages/summary.py")
 
 if want_upload:
-    st.switch_page(pages["upload_meeting"])
+    st.switch_page("pages/upload_meeting.py")
 
 if want_topic:
-    st.switch_page(pages["create_topic"])
+    st.switch_page("pages/create_topic.py")
 

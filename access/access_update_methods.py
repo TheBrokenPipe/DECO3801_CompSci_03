@@ -33,7 +33,7 @@ async def delete_from_table(
     filter_clause = ' AND '.join([f"{k} = %s" for k in key_name])
 
     # Generate the DELETE SQL query
-    sql = f"DELETE FROM app.{model.__tablename__} WHERE {filter_clause} RETURNING *;"
+    sql = f"DELETE FROM public.{model.__tablename__} WHERE {filter_clause} RETURNING *;"
 
     try:
         # Execute the SQL query
@@ -70,17 +70,23 @@ async def update_table_from_model(obj: BaseModelSubClass) -> BaseModelSubClass:
 
     # Generate the SQL query
     sql = f"""
-        UPDATE app.{obj.__tablename__} 
+        UPDATE public.{obj.__tablename__} 
         SET {set_clause}
         WHERE {primary_key_column} = %s
         RETURNING *;
     """
-
     try:
         # Execute the SQL query
         return await AccessBase.db_fetchone(
             sql,
-            tuple(map(lambda v: dumps(v) if isinstance(v, dict) else v, data.values())) + (primary_key_value,),
+            tuple(
+                map(
+                    lambda v:
+                    dumps(v) if isinstance(v, dict) else
+                    list(map(lambda i_v: dumps(i_v) if isinstance(i_v, dict) else i_v, v)) if isinstance(v, list) else
+                    v, data.values()
+                )
+            ) + (primary_key_value,),
             lambda f: obj.__class__(**f)
         )
     except Exception as e:
@@ -130,7 +136,7 @@ async def update_table(
 
     # Generate the SQL query
     sql = f"""
-        UPDATE app.{table_name}
+        UPDATE public.{table_name}
         SET {set_clause}
         WHERE {where_clause}
         RETURNING *;

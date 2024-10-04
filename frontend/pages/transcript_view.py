@@ -1,7 +1,6 @@
 import datetime
 import random
 import streamlit as st
-from index import pages
 
 
 # return ordered array of the text paragraphs for the transcript
@@ -29,10 +28,10 @@ centreHeader.header("Logo")
 header_help = rightHeader.button("Help", key="idjwn")
 
 if header_back:
-    st.switch_page(pages["chat"])
+    st.switch_page("pages/chat.py")
 
 if header_help:
-    st.switch_page(pages["help"])
+    st.switch_page("pages/help.py")
 
 date_string = datetime.datetime.strftime(get_meeting_date(), "%d/%m/%Y")
 st.header(f"{get_meeting_name()} ({date_string})")

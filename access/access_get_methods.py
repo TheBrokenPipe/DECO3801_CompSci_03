@@ -160,7 +160,7 @@ async def select_from_table(
 
 async def select_many_from_table(
     model: Type[BaseModelSubClass],
-    values: list[int | str | tuple],
+    values: Optional[list[int | str | tuple]] = None,
     key_name: str | tuple = None,
     grouped: bool = False,
     one_per_input: bool = False
@@ -172,38 +172,43 @@ async def select_many_from_table(
     if key_name is None:
         key_name = model.__primarykey__
 
-    # Ensure key_name type matches the type of keys provided
-    if not isinstance(values, list):
-        values = [values]
+    if values is None or not values:
+        # No values provided, select all rows
+        sql = f"SELECT * FROM public.{model.__tablename__};"
+        params = []
+    else:
+        # Ensure key_name type matches the type of keys provided
+        if not isinstance(values, list):
+            values = [values]
 
-    if isinstance(key_name, str):
-        key_name = [key_name]  # Convert to list for consistent handling
+        if isinstance(key_name, str):
+            key_name = [key_name]  # Convert to list for consistent handling
 
-    assert type(key_name) in [list, tuple], "key_name must be a string, list, or tuple."
+        assert type(key_name) in [list, tuple], "key_name must be a string, list, or tuple."
 
-    # Handle composite keys or single keys
-    if isinstance(key_name, tuple):  # Composite Key
-        # Ensure all provided keys are tuples of the correct length
-        assert all(isinstance(pkey, tuple) and len(pkey) == len(key_name) for pkey in values), \
-            "All provided keys must be tuples of the correct length."
+        # Handle composite keys or single keys
+        if isinstance(key_name, tuple):  # Composite Key
+            # Ensure all provided keys are tuples of the correct length
+            assert all(isinstance(pkey, tuple) and len(pkey) == len(key_name) for pkey in values), \
+                "All provided keys must be tuples of the correct length."
 
-        # Generate SQL placeholders for composite keys
-        placeholder = f"({', '.join(['%s'] * len(key_name))})"
-        placeholders = ', '.join([placeholder] * len(values))
-        params = [item for pkey in values for item in pkey]
-        filter_clause = f"({', '.join(key_name)}) IN ({placeholders})"
+            # Generate SQL placeholders for composite keys
+            placeholder = f"({', '.join(['%s'] * len(key_name))})"
+            placeholders = ', '.join([placeholder] * len(values))
+            params = [item for pkey in values for item in pkey]
+            filter_clause = f"({', '.join(key_name)}) IN ({placeholders})"
 
-    else:  # Single Key
-        # Ensure all provided keys are of the correct type
-        assert all(isinstance(pkey, (int, str)) for pkey in values), \
-            "All provided keys must be int or str for a single primary key."
+        else:  # Single Key
+            # Ensure all provided keys are of the correct type
+            assert all(isinstance(pkey, (int, str)) for pkey in values), \
+                "All provided keys must be int or str for a single primary key."
 
-        placeholders = ', '.join(['%s'] * len(values))
-        params = values
-        filter_clause = f"{key_name[0]} IN ({placeholders})"
+            placeholders = ', '.join(['%s'] * len(values))
+            params = values
+            filter_clause = f"{key_name[0]} IN ({placeholders})"
 
-    # Generate the SQL query
-    sql = f"SELECT * FROM public.{model.__tablename__} WHERE {filter_clause};"
+        # Generate the SQL query with WHERE clause
+        sql = f"SELECT * FROM public.{model.__tablename__} WHERE {filter_clause};"
 
     try:
         results = await AccessBase.db_fetchall(

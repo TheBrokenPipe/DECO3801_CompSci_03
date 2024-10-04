@@ -1,6 +1,5 @@
 import streamlit as st
 import time
-from index import pages
 
 
 def header():
@@ -16,4 +15,4 @@ with st.spinner("Loading application"):
     # load everything needed here.
     time.sleep(1)
 
-st.switch_page(pages["chat"])
+st.switch_page("pages/chat.py")

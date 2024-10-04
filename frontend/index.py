@@ -33,6 +33,7 @@ for file in file_list:
     page_list.append(page)
     pages[file_name] = page
 
+
 pg = st.navigation(page_list, position="hidden")
 pg.run()
 

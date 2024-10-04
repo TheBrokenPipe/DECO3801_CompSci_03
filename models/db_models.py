@@ -50,7 +50,7 @@ class DB_Meeting(DatabaseModel):
     file_recording: str
     file_transcript: str
     summary: str
-    status: str
+    status: str = "Queued"
 
 
 class DB_KeyPoint(DatabaseModel):
@@ -94,6 +94,17 @@ class DB_MeetingTag(DatabaseModel):
     tag_id: int
 
 
+class DB_ChatTag(DatabaseModel):
+    __tablename__ = "chat_tag"
+    __primarykey__ = ("chat_id", "tag_id")
+    __foreignkeys__ = {
+        'meeting_id': ('meeting', 'id'),
+        'chat_id': ('chat', 'id')
+    }
+    chat_id: int
+    tag_id: int
+
+
 class DB_Doc(DatabaseModel):
     __tablename__ = "document"
     __primarykey__ = "id"
@@ -113,4 +124,4 @@ class DB_Chat(DatabaseModel):
     id: int | None = None
     name: str
     filter: dict = {}
-    history: dict = {}
+    history: list = []

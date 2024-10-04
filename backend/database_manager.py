@@ -55,13 +55,19 @@ class DB_Manager:
                 id SERIAL PRIMARY KEY,
                 name TEXT,
                 last_modified DATE
-            ); 
+            );
 
             CREATE TABLE IF NOT EXISTS meeting_tag (
                 meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
                 tag_id INTEGER REFERENCES tag(id) ON DELETE CASCADE ON UPDATE CASCADE,
                 PRIMARY KEY (meeting_id, tag_id)
-            ); 
+            );
+
+            CREATE TABLE IF NOT EXISTS chat_tag (
+                chat_id INTEGER REFERENCES chat(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                tag_id INTEGER REFERENCES tag(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                PRIMARY KEY (chat_id, tag_id)
+            );
 
             CREATE TABLE IF NOT EXISTS document (
                 id SERIAL PRIMARY KEY,
@@ -75,7 +81,7 @@ class DB_Manager:
                 id SERIAL PRIMARY KEY,
                 name TEXT,
                 filter JSONB,
-                history JSONB
+                history JSONB[]
             );
             """
         )

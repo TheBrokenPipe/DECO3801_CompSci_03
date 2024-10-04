@@ -2,7 +2,6 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from index import pages
 
 # other imports
 import streamlit as st
@@ -13,12 +12,12 @@ from interface import *
 if "current_chat" not in st.session_state:
     st.session_state["current_chat"] = 0
 
-chat = server.get_user("user").get_chats()[st.session_state["current_chat"]]
+chat = server.chats[st.session_state["current_chat"]]
 
 back_button = st.button("🔙", key="backButton")
 
 if (back_button):
-    st.switch_page(pages["chat"])
+    st.switch_page("pages/chat.py")
 
 topics = chat.get_topics()
 
@@ -26,8 +25,8 @@ topicsNames = map(lambda topic: topic.get_name(), topics)
 headertxt = " and ".join(topicsNames) + " Summary"
 st.header(headertxt)
 
-topicModified = map(lambda topic: topic.get_modified_time(), topics)
-st.text(f"Last modified: " + datetime.strftime(max(topicModified), "%Y-%m-%d"))
+# topicModified = map(lambda topic: topic.get_modified_time(), topics)
+# st.text(f"Last modified: " + datetime.strftime(max(topicModified), "%Y-%m-%d"))
 
 col1, col2 = st.columns(2)
 
