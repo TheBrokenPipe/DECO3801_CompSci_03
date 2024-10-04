@@ -49,7 +49,7 @@ def download_meetings(base_path: str):
     print("Downloading meetings... ")
     baseurl = "https://groups.inf.ed.ac.uk/ami/AMICorpusMirror/amicorpus/"
     # scenarios = ["ES2002","ES2003","ES2004","ES2005","ES2006","ES2007","ES2008","ES2009",]
-    scenarios = ["ES2002","ES2003"]
+    scenarios = ["ES2002", "ES2003"]
     meetings = ["a", "b", "c", "d"]
     for scenario in scenarios:
         for meeting in meetings:
@@ -87,13 +87,13 @@ async def create_meetings(base_path: str):
 
 def main():
     base_dir = "data/recordings/"
-    try:
-        os.makedirs(base_dir)
-    except FileExistsError as e:
-        print("Recordings directory already exists, skipping setup")
-        return
+    # try:
+    #     os.makedirs(base_dir)
+    # except FileExistsError as e:
+    #     print("Recordings directory already exists, skipping setup")
+    #     return
     
-    download_meetings(base_dir)
+    # download_meetings(base_dir)
     asyncio.run(create_meetings(base_dir))
 
 if __name__ == "__main__":

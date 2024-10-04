@@ -6,7 +6,7 @@ from index import pages
 
 # other imports
 import streamlit as st
-import datetime
+from datetime import datetime
 import random
 from interface import *
 
@@ -27,7 +27,7 @@ headertxt = " and ".join(topicsNames) + " Summary"
 st.header(headertxt)
 
 topicModified = map(lambda topic: topic.get_modified_time(), topics)
-st.text(f"Last modified: " + datetime.datetime.strftime(max(topicModified), "%Y-%m-%d"))
+st.text(f"Last modified: " + datetime.strftime(max(topicModified), "%Y-%m-%d"))
 
 col1, col2 = st.columns(2)
 

@@ -1,28 +1,37 @@
 import streamlit as st
 from interface import *
+# TODO fix this, it imports interface everytime
 from index import pages
 
 print("Loading Chat")
 
+st.markdown(
+    """
+    <style>
+    .full-height {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 def btn_click(index):
     st.session_state["current_chat"] = index
-print(1)
-user = server.get_user("user")
-if user is None:
-    user = server.create_user("user", "p@ssword")
 
-print(2)
-chats = user.get_chats()
-print(3)
+
+chats = server.get_chats()
+print(chats)
 
 chat_names = []
 for chat in chats:
-    chat_names.append(chat.get_topics()[0].get_name())
-print(4)
+    chat_names.append(chat._chat.name)
 
 if "current_chat" not in st.session_state:
     st.session_state["current_chat"] = 0
-print(5)
 
 want_upload = None
 want_topic = None
@@ -32,14 +41,15 @@ with st.sidebar:
     st.title("Chats")
 
     with st.expander("Chats", True):
-        print("Setting Chats")
         for i, chat_name in enumerate(chat_names):
-            # create a button that will change the current chat to the ith chat
             st.button(chat_name, on_click=btn_click, kwargs={"index": i})
     st.divider()
     with st.expander("Actions", True):
         want_upload = st.button("Upload Meeting")
         want_topic = st.button("Create Topic")
+
+print(chat_names)
+print(st.session_state["current_chat"])
 
 st.title(chat_names[st.session_state["current_chat"]])
 
@@ -47,6 +57,7 @@ st.title(chat_names[st.session_state["current_chat"]])
 CHAT_PROMPT = "Ask a question about your meetings"  # TODO: confirm with group
 
 container = st.container(border=True, height=300)
+container.markdown('<div class="full-height">', unsafe_allow_html=True)
 
 for message in chats[st.session_state["current_chat"]].get_messages():
     container.chat_message(message.get_sender().get_name()).markdown(message.get_text())

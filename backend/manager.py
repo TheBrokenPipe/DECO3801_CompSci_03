@@ -11,6 +11,7 @@ from access import *
 
 from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
 
+
 class Manager:
 
     def __init__(self):
@@ -18,16 +19,16 @@ class Manager:
         self.rag = RAG()
 
     @staticmethod
-    async def get_all_meetings() -> list[Meeting]:
-        return await select_many_from_table(Meeting)
+    async def get_all_meetings() -> list[DB_Meeting]:
+        return await select_many_from_table(DB_Meeting)
 
     @staticmethod
-    async def get_all_tags() -> list[Tag]:
-        return await select_many_from_table(Tag)
+    async def get_all_tags() -> list[DB_Tag]:
+        return await select_many_from_table(DB_Tag)
 
     @staticmethod
-    async def create_tag(name, meetings: list[Meeting]) -> Tag:
-        tag = await insert_into_table(TagCreation(name=name,last_modified=datetime.now()), always_return_list=False)
+    async def create_tag(name, meetings: list[DB_Meeting]) -> DB_Tag:
+        tag = await insert_into_table(DB_Tag(name=name, last_modified=datetime.now()), always_return_list=False)
         print(f"Tag added: {tag.name}")
         await Manager.add_meetings_to_tag(tag, meetings)
         print(f"Meetings added")
@@ -36,9 +37,9 @@ class Manager:
     @staticmethod
     async def create_meeting(
             name: str, date: datetime, file_recording: str, file_transcript: str, summary: str
-    ) -> Meeting:
+    ) -> DB_Meeting:
         meeting = await insert_into_table(
-            MeetingCreation(
+            DB_Meeting(
                 name=name,
                 date=date,
                 file_recording=file_recording,
@@ -51,23 +52,23 @@ class Manager:
         return meeting
 
     @staticmethod
-    async def create_action_item(item: str, meeting: Meeting):
-        return await insert_into_table(ActionItemCreation(text=item, meeting_id=meeting.id))
+    async def create_action_item(item: str, meeting: DB_Meeting):
+        return await insert_into_table(DB_ActionItem(text=item, meeting_id=meeting.id))
 
     @staticmethod
-    async def create_key_point(point: str, meeting: Meeting):
-        return await insert_into_table(KeyPointCreation(text=point, meeting_id=meeting.id))
+    async def create_key_point(point: str, meeting: DB_Meeting):
+        return await insert_into_table(DB_KeyPoint(text=point, meeting_id=meeting.id))
 
     @staticmethod
-    async def add_meetings_to_tag(tag: Tag, meetings: Meeting | list[Meeting]) -> list[MeetingTag]:
-        if isinstance(meetings, Meeting):
-            return await insert_into_table(MeetingTagCreation(meeting_id=meetings.id, tag_id=tag.id))
+    async def add_meetings_to_tag(tag: DB_Tag, meetings: DB_Meeting | list[DB_Meeting]) -> list[DB_MeetingTag]:
+        if isinstance(meetings, DB_Meeting):
+            return await insert_into_table(DB_MeetingTag(meeting_id=meetings.id, tag_id=tag.id))
         elif isinstance(meetings, list) and len(meetings):
-            return await insert_into_table([MeetingTagCreation(meeting_id=meeting.id, tag_id=tag.id) for meeting in meetings])
+            return await insert_into_table([DB_MeetingTag(meeting_id=meeting.id, tag_id=tag.id) for meeting in meetings])
 
     @staticmethod
-    async def get_tag_meetings(tag: Tag) -> list[Meeting]:
-        return await select_with_joins(tag.id, [Tag, MeetingTag, Meeting])
+    async def get_tag_meetings(tag: DB_Tag) -> list[DB_Meeting]:
+        return await select_with_joins(tag.id, [DB_Tag, DB_MeetingTag, DB_Meeting])
 
     def upload_file_from_streamlit(self, uploaded_file: streamFile):
         time_tag = datetime.now().timestamp()

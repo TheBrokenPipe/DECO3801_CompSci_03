@@ -73,6 +73,7 @@ class DB_Manager:
 
             CREATE TABLE IF NOT EXISTS chat (
                 id SERIAL PRIMARY KEY,
+                name TEXT,
                 filter JSONB,
                 history JSONB
             );

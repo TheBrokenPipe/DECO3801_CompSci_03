@@ -49,7 +49,6 @@ class RAG:
             use_jsonb=True,
         )
 
-
     def invoke_llm(self, system_prompt: str, user_prompt: str) -> str:
         prompt = ChatPromptTemplate.from_messages(
             [("system","{system_prompt}",),
@@ -95,11 +94,11 @@ class RAG:
 
     def key_points_extraction(self, transcription):
         transcript = jsonl_to_txt(transcription)
-        return self.extract_specific_objects(transcript, KeyPoints)
+        return self.extract_specific_objects(transcript, DB_KeyPoints)
 
     def action_item_extraction(self, transcription):
         transcript = jsonl_to_txt(transcription)
-        return self.extract_specific_objects(transcript, ActionItems)
+        return self.extract_specific_objects(transcript, DB_ActionItems)
 
     def summarise_meeting(self, transcription) -> dict:
         return {
@@ -108,7 +107,7 @@ class RAG:
             'action_items': self.action_item_extraction(transcription),
         }
     
-    def embed_meeting(self, meeting: Meeting, chunks: list[Document]):
+    def embed_meeting(self, meeting: DB_Meeting, chunks: list[Document]):
         for doc in chunks:
             if isinstance(self.embeddings, OllamaEmbeddings):
                 doc.page_content = "search_document: " + doc.page_content
