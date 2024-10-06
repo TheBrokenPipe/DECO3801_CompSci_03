@@ -21,7 +21,6 @@ async def main():
     with DockerManager(stop_when_done=False) as m:
         m.full_setup()
         await DB_Manager.full_setup()
-        return
         ingestion = Ingestion()
         while True:
             await ingestion.transcribe_next_meeting()

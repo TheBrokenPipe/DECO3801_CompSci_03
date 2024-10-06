@@ -63,6 +63,13 @@ class DB_Manager:
                 PRIMARY KEY (meeting_id, tag_id)
             );
 
+            CREATE TABLE IF NOT EXISTS chat (
+                id SERIAL PRIMARY KEY,
+                name TEXT,
+                filter JSONB,
+                history JSONB[]
+            );
+
             CREATE TABLE IF NOT EXISTS chat_tag (
                 chat_id INTEGER REFERENCES chat(id) ON DELETE CASCADE ON UPDATE CASCADE,
                 tag_id INTEGER REFERENCES tag(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -75,13 +82,6 @@ class DB_Manager:
                 metadata JSONB,
                 text TEXT,
                 embedding VECTOR({os.getenv('VECTOR_SIZE')})
-            );
-
-            CREATE TABLE IF NOT EXISTS chat (
-                id SERIAL PRIMARY KEY,
-                name TEXT,
-                filter JSONB,
-                history JSONB[]
             );
             """
         )

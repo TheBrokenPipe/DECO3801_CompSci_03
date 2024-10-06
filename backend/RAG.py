@@ -94,11 +94,11 @@ class RAG:
 
     def key_points_extraction(self, transcription):
         transcript = jsonl_to_txt(transcription)
-        return self.extract_specific_objects(transcript, DB_KeyPoints)
+        return self.extract_specific_objects(transcript, KeyPoints)
 
     def action_item_extraction(self, transcription):
         transcript = jsonl_to_txt(transcription)
-        return self.extract_specific_objects(transcript, DB_ActionItems)
+        return self.extract_specific_objects(transcript, ActionItems)
 
     def summarise_meeting(self, transcription) -> dict:
         return {

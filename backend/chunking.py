@@ -117,7 +117,7 @@ class Chunks:
 
         return chunks
 
-    def chunk_transcript(self, meeting: Meeting) -> List[Document]:
+    def chunk_transcript(self, meeting: DB_Meeting) -> List[Document]:
         file_path = meeting.file_transcript
         jsonl = self.load_jsonl_file(file_path)
         merged = self.merge_speaker_lines(jsonl)

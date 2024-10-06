@@ -4,9 +4,11 @@ streamlit-tags
 
 langchain
 langchain_ollama
+langchain_community
 langchain_openai
 langchain_postgres
 
+requests
 python-dotenv
 docker
 psycopg[binary]
