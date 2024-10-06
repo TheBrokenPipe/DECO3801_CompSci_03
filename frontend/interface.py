@@ -130,6 +130,9 @@ class Meeting:
 
     def get_meeting_date(self: Meeting) -> datetime:
         return self._meeting.date
+    
+    def get_meeting_name(self: Meeting) -> str:
+        return self._meeting.name
 
     @property
     async def topics(self: Meeting) -> list[Topic]:

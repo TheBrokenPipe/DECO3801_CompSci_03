@@ -31,6 +31,8 @@ class AccessBase:
     @staticmethod
     def db_access(func):
         async def wrapper(*args, **kwargs):
+            logger = logging.getLogger(__name__)
+            logger.debug(AccessBase.connection_string)
             await AccessBase.pool.open()
             try:
                 async with AccessBase.pool.connection(30) as conn:

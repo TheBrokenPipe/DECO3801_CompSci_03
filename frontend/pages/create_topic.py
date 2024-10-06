@@ -11,7 +11,7 @@ with col2:
     if st.button('Help'):
         st.switch_page("pages/help.py")
 
-topics = server.get_topics()
+topics = asyncio.run(server.get_all_topics())
 
 # with st.expander("Current Topics"):
     # for topic in topics:
@@ -21,7 +21,7 @@ st.title("Create New Topic")
 
 meeting_name = st.text_input("New topic name:")
 
-existing_meetings = server.get_meetings()
+existing_meetings = asyncio.run(server.get_all_meetings())
 
 existing_meeting_names = []
 for meeting in existing_meetings:
@@ -49,4 +49,4 @@ if want_create:
         for meeting in existing_meetings:
             if meeting.get_meeting_name().lower() == name.lower():
                 wanted_meetings.append(meeting)
-    server.create_topic(meeting_name, wanted_meetings, [])
+    server.create_topic(meeting_name, wanted_meetings)
