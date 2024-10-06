@@ -18,6 +18,8 @@ class AccessBase:
         f"user={os.getenv('DB_USER')} "
         f"password={os.getenv('DB_PASSWORD')}"
     )
+    logger = logging.getLogger(__name__)
+    logger.debug(connection_string)
 
     pool = AsyncConnectionPool(
         connection_string,

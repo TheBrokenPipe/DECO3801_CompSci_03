@@ -41,7 +41,8 @@ class RAG:
             self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
         
         connection = f"postgresql+psycopg://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('HOSTNAME')}:{os.getenv('PORT')}/{os.getenv('DB_NAME')}"
-        
+        self.logger.debug(connection)
+
         self.vector_store = PGVector(
             embeddings=self.embeddings,
             collection_name=os.environ.get("VECTOR_STORE_NAME", "deco3801"),

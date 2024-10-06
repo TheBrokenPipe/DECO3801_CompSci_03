@@ -549,6 +549,7 @@ async def select_with_joins(
                 return [g[0] if len(g) else None for g in grouped_results]
 
     except Exception as e:
+        logger = logging.getLogger(__name__)
         logger.error(f"Error fetching data: {e}")
         raise e
 

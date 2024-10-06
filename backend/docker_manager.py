@@ -45,14 +45,16 @@ class DockerManager:
             self.logger.debug(f"Container '{container_name}' does not exist. Proceeding to create...")
             # If the container does not exist, run a new PostgreSQL container with the persistent volume
             try:
-                self.container = client.containers.run(
-                    image="pgvector/pgvector:pg16",
-                    name=container_name,
-                    environment={
+                environment={
                         "POSTGRES_USER": os.getenv("DB_USER"),
                         "POSTGRES_PASSWORD": os.getenv("DB_PASSWORD"),
                         "POSTGRES_DB": os.getenv("DB_NAME"),
-                    },
+                    }
+                self.logger.debug(environment)
+                self.container = client.containers.run(
+                    image="pgvector/pgvector:pg16",
+                    name=container_name,
+                    environment=environment,
                     ports={f"{os.getenv('PORT')}/tcp": os.getenv("PORT")},  # Expose PostgreSQL port 5432
                     volumes={
                         os.getenv("VOLUME_NAME"): {'bind': '/var/lib/postgresql/data', 'mode': 'rw'}
