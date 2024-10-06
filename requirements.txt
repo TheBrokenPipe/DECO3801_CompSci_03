@@ -3,6 +3,7 @@ streamlit
 streamlit-tags
 
 langchain
+langchain_community
 langchain_ollama
 langchain_openai
 langchain_postgres
