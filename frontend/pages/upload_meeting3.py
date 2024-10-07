@@ -1,6 +1,6 @@
 import streamlit as st
 import streamlit_tags as stt
-from interface import server, updateSummary
+from interface import Server
 
 # known issue: the warning about consent only occurs twice.
 
