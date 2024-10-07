@@ -45,7 +45,7 @@ class Server:
                     name=name,
                     date=date,
                     file_recording=filename,
-                    file_transcript="file_transcript",
+                    file_transcript=None,
                     summary="",
                 ), always_return_list=False
             )
@@ -89,8 +89,8 @@ class Topic:
         self._tag = await update_table_from_model(self._tag)
 
     @property
-    def meetings(self):
-        return select_with_joins(self._tag.name, [DB_MeetingTag, DB_Meeting])
+    async def meetings(self):
+        return await select_with_joins(self._tag.name, [DB_MeetingTag, DB_Meeting])
 
     async def add_meeting(self, meeting: DB_Meeting) -> None:
         await insert_into_table(

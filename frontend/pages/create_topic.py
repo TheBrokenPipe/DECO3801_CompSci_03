@@ -1,6 +1,7 @@
 import streamlit as st
 from interface import *
 import streamlit_tags as stt
+import asyncio
 
 col1, col2 = st.columns([6, 1], gap = "large", vertical_alignment="center")
 with col1:
@@ -49,4 +50,4 @@ if want_create:
         for meeting in existing_meetings:
             if meeting.get_meeting_name().lower() == name.lower():
                 wanted_meetings.append(meeting)
-    server.create_topic(meeting_name, wanted_meetings)
+    asyncio.run(server.create_topic(meeting_name, wanted_meetings))
