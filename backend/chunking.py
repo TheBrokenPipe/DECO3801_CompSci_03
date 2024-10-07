@@ -17,15 +17,17 @@ from models import *
 class Chunks:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-
-        if "OPENAI_API_KEY" in os.environ:
+        provider = os.getenv("EMBED_PROVIDER","openai") 
+        if "OPENAI_API_KEY" in os.environ and provider == "openai":
             self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
         else:
             self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
     def get_embedding(self, text):
-        embedding = self.embeddings.embed_documents(["clustering: " + text])[0]
-        # embedding = self.embeddings.embed_documents([text])[0]
+        if isinstance(self.embeddings, OpenAIEmbeddings):
+            embedding = self.embeddings.embed_documents([text])[0]
+        else:
+            embedding = self.embeddings.embed_documents(["clustering: " + text])[0]
         return embedding
 
     def load_jsonl_file(self, file_path):

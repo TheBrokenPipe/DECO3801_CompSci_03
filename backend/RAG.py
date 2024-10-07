@@ -35,7 +35,12 @@ class RAG:
         self.logger = logging.getLogger(__name__)
         if "OPENAI_API_KEY" in os.environ:
             self.llm = ChatOpenAI(model=os.getenv("OPENAI_LLM_MODEL", "gpt-4o-mini"), temperature=0.2)
-            self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+
+            if os.getenv("EMBED_PROVIDER","openai") == "openai":
+                self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+            else:
+                self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
+            
         else:
             self.llm = ChatOllama(model=os.getenv("OLLAMA_MODEL", "llama3.1e"), temperature=0.2)
             self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
