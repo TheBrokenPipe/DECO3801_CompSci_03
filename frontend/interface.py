@@ -10,7 +10,10 @@ from backend.manager import Manager
 import models
 from access import *
 
-manager = Manager()
+USE_BACKEND = False
+
+if USE_BACKEND:
+    manager = Manager()
 
 class Server:
     def __init__(this) -> None:
@@ -38,104 +41,94 @@ class Server:
         return None
 
     def upload_meeting(this, data: bytes, filename: str, name: str, date: datetime.datetime, attendees: list[User], callback: callable) -> Meeting:
-#ifdef BACKEND
-        # result = Meeting(id=rand(), date=date, name=name, file_recording=filename, file_transcript=None, summary=None)
-#else
-        result = Meeting(data, filename, name, date, attendees, callback)
-        this.meetings.append(result)
-        return result
+        if USE_BACKEND:
+            result = Meeting(id=rand(), date=date, name=name, file_recording=filename, file_transcript=None, summary=None)
+        else:
+            result = Meeting(data, filename, name, date, attendees, callback)
+            this.meetings.append(result)
+            return result
 
     def get_meetings(this) -> list[Meeting]:
-#ifdef BACKEND
-        meetings = []
-        for meeting in Manager.get_all_meetings():
-            meetings.append(Meeting(meeting))
-        return meetings
-#else
-        # return this.meetings.copy()
-#endif
+        if USE_BACKEND:
+            meetings = []
+            for meeting in Manager.get_all_meetings():
+                meetings.append(Meeting(meeting))
+            return meetings
+        else:
+            return this.meetings.copy()
 
     def create_topic(this, name: str, meetings: list[Meeting], users: list[User]) -> Topic:
-#ifdef BACKEND
-        result = Topic(asyncio.run(manager.create_tag(name, meetings)))
-#else
-        # result = Topic(name, meetings, users)
-        # this.topics.append(result)
-#endif
+        if USE_BACKEND:
+            result = Topic(asyncio.run(manager.create_tag(name, meetings)))
+        else:
+            result = Topic(name, meetings, users)
+            this.topics.append(result)
         return result
 
     def get_topics(this) -> list[Topic]:
-#ifdef BACKEND
-        topics = []
-        for topic in asyncio.run(manager.get_all_tags()):
-            topics.append(Topic(topic))
-        return topics
-#else
-        # return this.topics.copy()
+        if USE_BACKEND:
+            topics = []
+            for topic in asyncio.run(manager.get_all_tags()):
+                topics.append(Topic(topic))
+            return topics
+        else:
+            return this.topics.copy()
 #endif
 
 
 class Topic:
-#ifdef BACKEND
     def __init__(this, tag: models.Tag) -> None:
         this._tag = tag
         this.users = users.copy()
         this.last_modified = datetime.datetime.now()
         this.summary = "AI-generated summary for all meeting under this topic..."
         this.action_items = ["Eat", "Sleep", "Die"]
-
-#else
         
-    # def __init__(this, name: str, meetings: list[Meeting], users: list[User]) -> None:
-    #     this.name = name
-    #     this.meetings = meetings.copy()
-    #     this.users = users.copy()
-    #     this.last_modified = datetime.datetime.now()
-    #     this.summary = "AI-generated summary for all meeting under this topic..."
-    #     this.action_items = ["Eat", "Sleep", "Die"]
+    def __init__(this, name: str, meetings: list[Meeting], users: list[User]) -> None:
+        this.name = name
+        this.meetings = meetings.copy()
+        this.users = users.copy()
+        this.last_modified = datetime.datetime.now()
+        this.summary = "AI-generated summary for all meeting under this topic..."
+        this.action_items = ["Eat", "Sleep", "Die"]
 
-    #     for meeting in this.meetings:
-    #         meeting._link_topic(this)
-
-#endif
+        for meeting in this.meetings:
+            meeting._link_topic(this)
 
     def get_name(this) -> str:
-#ifdef BACKEND
-        return this._tag.name
-#else
-        # return this.name
-#endif
+        if USE_BACKEND:
+            return this._tag.name
+        else:
+            return this.name
 
     def set_name(this, name: str) -> None:
-#ifdef BACKEND
-        this._tag.name = name
-        update_table(this._tag)
-#else
-        # this.name = name
-#endif
+        if USE_BACKEND:
+            this._tag.name = name
+            update_table(this._tag)
+        else:
+            this.name = name
 
     def get_meetings(this) -> Meeting:
-#ifdef BACKEND
-        # return Meeting(Manager.get_tag_meetings(this._tag))
-#else
-        return this.meetings.copy()
-#endif
+        if USE_BACKEND:
+            return Meeting(Manager.get_tag_meetings(this._tag))
+        else:
+            return this.meetings.copy()
 
     def add_meeting(this, meeting: Meeting) -> None:
-#ifdef BACKEND
-        # Manager.add_meetings_to_tag(this._tag, meeting.get_underlying_object())
-#else
-        if meeting not in this.meetings:
-            this.meetings.append(meeting)
-            meeting._link_topic(this)
-#endif
+        if USE_BACKEND:
+            Manager.add_meetings_to_tag(this._tag, meeting.get_underlying_object())
+        else:
+            if meeting not in this.meetings:
+                this.meetings.append(meeting)
+                meeting._link_topic(this)
+
             this.last_modified = datetime.datetime.now()
 
     def remove_meeting(this, meeting: Meeting) -> None:
-#ifdef BACKEND
-        this.meetings.remove(meeting)
-        meeting._unlink_topic(this)
-#endif
+        if USE_BACKEND:
+            this.meetings.remove(meeting)
+            meeting._unlink_topic(this)
+
         this.last_modified = datetime.datetime.now()
 
     def add_user(this, user: User) -> None:
@@ -158,59 +151,54 @@ class Topic:
 
 class Meeting:
     def __init__(this, data: bytes, filename: str, name: str, date: datetime.datetime, attendees: list[User], callback: callable) -> None:
-#ifdef BACKEND
-        # this._obj = backend.Meeting(id=rand(), date=date, name=name, file_recording=filename, file_transcript=None, summary=None)
-#else
-        this.data = data
-        this.filename = filename
-        this.name = name
-        this.date = date
-        this.transcript = "This is the meeting transcript..."
-        this.summary = "AI-generated summary for this particular meeting..."
+        if USE_BACKEND:
+            this._obj = backend.Meeting(id=rand(), date=date, name=name, file_recording=filename, file_transcript=None, summary=None)
+        else:
+            this.data = data
+            this.filename = filename
+            this.name = name
+            this.date = date
+            this.transcript = "This is the meeting transcript..."
+            this.summary = "AI-generated summary for this particular meeting..."
 
-        this.attendees = attendees
-        this.action_items = ["Thing 1", "Thing 2", "Thing 3"]
-        this.summary, this.action_items = callback(this.summary, this.action_items.copy())
+            this.attendees = attendees
+            this.action_items = ["Thing 1", "Thing 2", "Thing 3"]
+            this.summary, this.action_items = callback(this.summary, this.action_items.copy())
 
-        this._topics = []
-#endif
+            this._topics = []
+
     def get_transcript(this: Meeting) -> str:
-#ifdef BACKEND
-        # return this._obj.file_transcript
-#else
-        return this.transcript
-#endif
+        if USE_BACKEND:
+            return this._obj.file_transcript
+        else:
+            return this.transcript
 
     def get_original_upload(this: Meeting) -> tuple[bytes, str]:
         return (this.data, this.filename)
 
     def get_meeting_date(this: Meeting) -> datetime.datetime:
-#ifdef BACKEND
-        # return this._obj.date
-#else
-        return this.date
-#endif
+        if USE_BACKEND:
+            return this._obj.date
+        else:
+            return this.date
 
     def set_meeting_date(this: Meeting, date: datetime.datetime) -> None:
-#ifdef BACKEND
-        # this._obj.date = date
-#else
-        this.date = date
-#endif
+        if USE_BACKEND:
+            this._obj.date = date
+        else:
+            this.date = date
 
     def get_meeting_name(this: Meeting) -> str:
-#ifdef BACKEND
-        # return this._obj.name
-#else
-        return this.name
-#endif
+        if USE_BACKEND:
+            return this._obj.name
+        else:
+            return this.name
 
     def set_meeting_name(this: Meeting, name: str) -> None:
-#ifdef BACKEND
-        # this._obj.name = name
-#else
-        this.name = name
-#endif
+        if USE_BACKEND:
+            this._obj.name = name
+        else:
+            this.name = name
 
     def get_topics(this: Meeting) -> list[Topic]:
         # TODO: Manager.get_meeting_tags(meeting)
@@ -227,11 +215,10 @@ class Meeting:
         this.attendees.remove(attendee)
 
     def get_meeting_summary(this: Meeting) -> str:
-#ifdef BACKEND
-        # return this._obj.summary
-#else
-        return this.summary
-#endif
+        if USE_BACKEND:
+            return this._obj.summary
+        else:
+            return this.summary
 
     def get_meeting_action_items(this: Meeting) -> list[str]:
         # TODO: @Rick API or field?
@@ -244,10 +231,9 @@ class Meeting:
     def _unlink_topic(this: Meeting, topic: Topic) -> None:
         this._topics.remove(topic)
 
-#ifdef BACKEND
-    # def get_underlying_object(this: Meeting) -> backend.Meeting:
-        # return this._obj
-#endif
+    def get_underlying_object(this: Meeting) -> backend.Meeting:
+        return this._obj
+
 
 # Most secure thing ever!
 class User:
@@ -355,6 +341,9 @@ class Message:
         # newActionItems = actionItems
     # return (newSummary, actionItems)
 
+def updateSummary(currentSummary, actionItems):
+    return (currentSummary, actionItems)
+
 
 # server = Server()
 # me = server.create_user("TestUser", "p@ssword")
@@ -372,26 +361,25 @@ if len(users) < 2:
 else:
     user = users[1]
 
-def updateSummary(currentSummary, actionItems):
-    return (currentSummary, actionItems)
+if not USE_BACKEND:
+    # set up the static state
+    topic = server.create_topic("Executive Meetings", [], [user])
+    exec1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Executive Meeting", datetime.datetime.now(), [user], updateSummary)
+    exec2 = server.upload_meeting(b'Hello World!', "meeting.txt", "Second Executive Meeting", datetime.datetime.now(), [user], updateSummary)
+    topic.add_meeting(exec1)
+    topic.add_meeting(exec2)
+    topic2 = server.create_topic("Marketing Meetings", [], [user])
+    mark1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Marketing Meeting", datetime.datetime.now(), [user], updateSummary)
+    mark2 = server.upload_meeting(b'Hello World!', "meeting.txt", "Second Marketing Meeting", datetime.datetime.now(), [user], updateSummary)
+    topic2.add_meeting(mark1)
+    topic2.add_meeting(mark2)
 
-# topic = server.create_topic("Executive Meetings", [], [user])
-# exec1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Executive Meeting", datetime.datetime.now(), [user], updateSummary)
-# exec2 = server.upload_meeting(b'Hello World!', "meeting.txt", "Second Executive Meeting", datetime.datetime.now(), [user], updateSummary)
-# topic.add_meeting(exec1)
-# topic.add_meeting(exec2)
-# topic2 = server.create_topic("Marketing Meetings", [], [user])
-# mark1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Marketing Meeting", datetime.datetime.now(), [user], updateSummary)
-# mark2 = server.upload_meeting(b'Hello World!', "meeting.txt", "Second Marketing Meeting", datetime.datetime.now(), [user], updateSummary)
-# topic2.add_meeting(mark1)
-# topic2.add_meeting(mark2)
+    chat = Chat(user, [topic])
+    user.add_chat(chat)
+    chat2 = Chat(user, [topic2])
+    user.add_chat(chat2)
 
-# chat = Chat(user, [topic])
-# user.add_chat(chat)
-# chat2 = Chat(user, [topic2])
-# user.add_chat(chat2)
-
-# chat.query(Message(chat.get_user(), "What's my name?"))
-# chat.query(Message(chat.get_user(), "How are you?"))
-# chat2.query(Message(chat.get_user(), "How much money did we get?"))
-# chat2.query(Message(chat.get_user(), "When is this due?"))
+    chat.query(Message(chat.get_user(), "What's my name?"))
+    chat.query(Message(chat.get_user(), "How are you?"))
+    chat2.query(Message(chat.get_user(), "How much money did we get?"))
+    chat2.query(Message(chat.get_user(), "When is this due?"))

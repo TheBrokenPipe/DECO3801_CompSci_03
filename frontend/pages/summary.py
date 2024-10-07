@@ -15,7 +15,7 @@ if "current_chat" not in st.session_state:
 
 chat = server.get_user("user").get_chats()[st.session_state["current_chat"]]
 
-back_button = st.button("🔙", key="backButton")
+back_button = st.button("← Back", key="backButton")
 
 if (back_button):
     st.switch_page(pages["chat"])
