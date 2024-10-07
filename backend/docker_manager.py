@@ -55,7 +55,7 @@ class DockerManager:
                     image="pgvector/pgvector:pg16",
                     name=container_name,
                     environment=environment,
-                    ports={f"{os.getenv('PORT')}/tcp": os.getenv("PORT")},  # Expose PostgreSQL port 5432
+                    ports={"5432/tcp": os.getenv("PORT")},  # Expose PostgreSQL port 5432
                     volumes={
                         os.getenv("VOLUME_NAME"): {'bind': '/var/lib/postgresql/data', 'mode': 'rw'}
                     },  # Mount volume to persist data
