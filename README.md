@@ -6,14 +6,13 @@ A web application where users can upload meetings and meeting-like events, which
 2. Install Docker 
 3. Install pytorch 
 4. Install remaining python dependencies by running `pip install -r requirements.txt`
-5. (Optional) Install Ollama
+5. Install Ollama
 
 ## Setup
-1. Copy `.env.sample` to `.env` and then edit to add in API keys and setup details as needed. 
-2. (Optional) To download sample meeting recordings and add them to the database run `python setup_test_data.py`
+Make sure Docker is running, then run `python setup.py` and follow the prompts.
 
 ## Usage
-"Minutes in Seconds" is split into frontend and backend components. Run the relevant commands below to start each component:
+"Minutes in Seconds" is split into frontend and backend components. Start by making sure Docker is running, then run the relevant commands below to start each component:
    *  Frontend - `streamlit run frontend\index.py`
    *  Backend - `python main.py`
 
