@@ -4,7 +4,6 @@ from datetime import date
 import sys
 import os
 import asyncio
-from backend.manager import Manager
 from access import *
 from models import *
 from streamlit.runtime.uploaded_file_manager import UploadedFile
@@ -12,8 +11,6 @@ from setup_test_data import setup_test_data1
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '...')))
-
-manager = Manager()
 
 
 class Server:
@@ -28,18 +25,20 @@ class Server:
 
     @staticmethod
     async def get_all_chats() -> list[Chat]:
-        return [Chat(c) for c in await select_many_from_table(DB_Chat)]
+        return list(reversed([Chat(c) for c in await select_many_from_table(DB_Chat)]))
 
     @staticmethod
     async def get_chat_by_id(id):
         return Chat(await select_from_table(DB_Chat, id))
 
     @staticmethod
-    async def upload_meeting(name: str, date: datetime, file: UploadedFile) -> Meeting:
+    async def upload_meeting(
+            name: str, date: datetime, file: UploadedFile, topics: list[Topic]
+    ) -> Meeting:
         filename = "data/recordings/" + file.name
         with open(filename, "wb") as audiofile:
             audiofile.write(file.read())
-        return Meeting(
+        meeting = Meeting(
             await insert_into_table(
                 DB_Meeting(
                     name=name,
@@ -51,40 +50,73 @@ class Server:
             )
         )
 
+        await insert_into_table(
+            [
+                DB_MeetingTag(
+                    meeting_id=meeting.id,
+                    tag_id=topic.id
+                ) for topic in topics
+            ]
+        )
+        return meeting
+
     @staticmethod
-    async def create_chat(name: str) -> Chat:
-        return Chat(
+    async def get_meetings_by_name(meeting_names: list[str]) -> list[Meeting]:
+        return [Meeting(m) for m in await select_many_from_table(DB_Meeting, meeting_names, "name")]
+
+    @staticmethod
+    async def create_chat(name: str, topics: list[Topic]) -> Chat:
+        chat = Chat(
             await insert_into_table(
                 DB_Chat(
                     name=name
                 )
             )
         )
+        await insert_into_table(
+            [
+                DB_ChatTag(
+                    chat_id=chat.id,
+                    tag_id=topic.id
+                ) for topic in topics
+            ]
+        )
+        return chat
 
     @staticmethod
     async def create_topic(name: str, meetings: list[Meeting]) -> Topic:
-        return Topic(
+        topic = Topic(
             await insert_into_table(
                 DB_Tag(
                     name=name
                 )
             )
         )
+        await insert_into_table(
+            [
+                DB_MeetingTag(
+                    meeting_id=meeting.id,
+                    tag_id=topic.id
+                ) for meeting in meetings
+            ]
+        )
+        return Topic
 
 
 class Topic:
     def __init__(self, tag: DB_Tag) -> None:
         self._tag = tag
-        # self.last_modified = datetime.now()
-        # self.summary = "AI-generated summary for all meeting under self topic..."
-        # self.action_items = ["Eat", "Sleep", "Die"]
+
+    @property
+    def id(self) -> int:
+        return self._tag.id
 
     @property
     def name(self) -> str:
         return self._tag.name
 
     @name.setter
-    async def set_name(self, value: str) -> None:
+    async def name(self, value: str) -> None:
         self._tag.name = value
         self._tag = await update_table_from_model(self._tag)
 
@@ -120,19 +152,24 @@ class Topic:
 class Meeting:
     def __init__(self, meeting: DB_Meeting) -> None:
         self._meeting = meeting
-        pass
+
+    @property
+    def id(self) -> int:
+        return self._meeting.id
+
+    @property
+    def name(self) -> str:
+        return self._meeting.name
 
     def get_transcript(self: Meeting) -> str:
         return self._meeting.file_transcript
 
-    def get_original_upload(self: Meeting) -> tuple[bytes, str]:
+    def get_original_upload(self: Meeting) -> str:
         return self._meeting.file_recording
 
-    def get_meeting_date(self: Meeting) -> datetime:
+    @property
+    def date(self: Meeting) -> datetime:
         return self._meeting.date
-    
-    def get_meeting_name(self: Meeting) -> str:
-        return self._meeting.name
 
     @property
     async def topics(self: Meeting) -> list[Topic]:

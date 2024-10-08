@@ -5,6 +5,7 @@ print("\nLoading Index")
 base_path = "pages/" 
 file_list = [
     'chat.py',  # keep the default page first
+    'create_chat.py',  # keep the default page first
     'booting.py',
     'create_topic.py',
     'help.py',

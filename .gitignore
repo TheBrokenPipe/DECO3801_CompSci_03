@@ -4,3 +4,5 @@ __pycache__
 .idea
 data
 IPV2.zip
+
+setup_test_data_full.py

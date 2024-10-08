@@ -5,6 +5,7 @@ from interface import Server
 
 print("Loading Chat")
 
+
 def btn_click(index):
     st.session_state["current_chat_id"] = index
 
@@ -35,8 +36,11 @@ with st.sidebar:
     st.title("Chats")
 
     with st.expander("Chats", True):
+        want_create_new_chat = st.button("New Chat")
+        st.divider()
         for chat in chats:
             st.button(chat.name, on_click=btn_click, kwargs={"index": chat.id})
+
     st.divider()
     with st.expander("Actions", True):
         want_upload = st.button("Upload Meeting")
@@ -57,6 +61,9 @@ if chat_input:
     container.chat_message("User").markdown(chat_input)
     asyncio.run(current_chat.add_message("Assistant", chat_input))
     container.chat_message("Assistant").markdown(chat_input)
+
+if want_create_new_chat:
+    st.switch_page("pages/create_chat.py")
 
 if want_summary:
     st.switch_page("pages/summary.py")

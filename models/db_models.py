@@ -48,7 +48,7 @@ class DB_Meeting(DatabaseModel):
     name: str
     date: datetime
     file_recording: str
-    file_transcript: str
+    file_transcript: str | None = None
     summary: str
     status: str = "Queued"
 

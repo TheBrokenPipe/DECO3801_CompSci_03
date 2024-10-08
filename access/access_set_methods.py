@@ -14,6 +14,9 @@ async def insert_into_table(
     if not isinstance(objs, list):
         objs = [objs]
 
+    if len(objs) == 0:
+        return []
+
     # Check if all objects are instances of BaseModel
     for obj in objs:
         assert issubclass(type(obj), BaseModel), f"Object is not a pydantic model: {obj}"

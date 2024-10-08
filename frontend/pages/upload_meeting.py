@@ -4,6 +4,7 @@
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import streamlit as st
+import streamlit_tags as stt
 from interface import Server
 import asyncio
 
@@ -23,6 +24,19 @@ meeting_name = st.text_input("Enter the name of the meeting:")
 
 meeting_date = st.date_input("On what date did the event take place?", format="DD/MM/YYYY")
 
+existing_topics = asyncio.run(Server.get_all_topics())
+selected_topics = stt.st_tags(
+    label='Existing Topics',
+    text='Press enter to add more',
+    value=[],
+    suggestions=[t.name for t in existing_topics],
+    key="hello"
+)
+selected_topics = [st.lower() for st in selected_topics]
+print(selected_topics)
+print([t for t in existing_topics if t.name.lower() in selected_topics])
+
+
 uploaded_file = st.file_uploader("Upload Recording/Transcript", type=['mp3', 'mp4', 'txt', 'wav'])
 
 if uploaded_file is not None:
@@ -36,7 +50,14 @@ with col2:
     next1 = st.button("Next", key="NextFromUpload1")
 
 if next1:
-    asyncio.run(Server.upload_meeting(meeting_name, meeting_date, uploaded_file))
+    asyncio.run(
+        Server.upload_meeting(
+            name=meeting_name,
+            date=meeting_date,
+            file=uploaded_file,
+            topics=[t for t in existing_topics if t.name.lower() in selected_topics]
+        )
+    )
     st.switch_page("pages/chat.py")
 
     # TODO skipping the rest to make this work

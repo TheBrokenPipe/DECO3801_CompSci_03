@@ -46,8 +46,8 @@ with col2.expander("Recent Meetings", expanded=True):
         meetingContainer = st.container(border=True)
         meetingContainer.write(meeting.get_meeting_name())
         meetingContainer.write(        
-            datetime.datetime.strftime(
-                meeting.get_meeting_date(),
+            datetime.strftime(
+                meeting.date,
                 "%d/%m/%y"
             )
         )
