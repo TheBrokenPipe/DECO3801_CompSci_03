@@ -17,7 +17,7 @@ from models import *
 class Chunks:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        provider = os.getenv("EMBED_PROVIDER","openai") 
+        provider = os.getenv("EMBED_PROVIDER","ollama") 
         if "OPENAI_API_KEY" in os.environ and provider == "openai":
             self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
         else:
