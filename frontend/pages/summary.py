@@ -10,10 +10,10 @@ import random
 import asyncio
 from interface import Server
 
-if "current_chat" not in st.session_state:
-    st.session_state["current_chat"] = asyncio.run(Server.get_latest_chats()).id
+if "current_chat_id" not in st.session_state:
+    st.session_state["current_chat_id"] = asyncio.run(Server.get_latest_chats()).id
 
-chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat"]))
+chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
 
 
 if "transcript_view_id" not in st.session_state:

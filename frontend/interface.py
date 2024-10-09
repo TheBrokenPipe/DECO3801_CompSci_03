@@ -262,7 +262,7 @@ class Chat:
         return await update_table_from_model(self._chat)
 
     def get_summary(self) -> str:
-        return "Summary Go HERE"
+        return "Summary for \"" + self.name + "\" (" + str(self.id) + ") Go HERE"
 
     def get_action_items(self) -> list[str]:
         return ["thing 1", "thing 2"]
