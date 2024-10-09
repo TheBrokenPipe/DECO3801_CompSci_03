@@ -7,22 +7,33 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import streamlit as st
 from datetime import datetime
 import random
-from interface import *
+import asyncio
+from interface import Server
 
 if "current_chat" not in st.session_state:
-    st.session_state["current_chat"] = 0
+    st.session_state["current_chat"] = asyncio.run(Server.get_latest_chats()).id
 
-chat = server.chats[st.session_state["current_chat"]]
+chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat"]))
+
+
+if "transcript_view_id" not in st.session_state:
+    st.session_state["transcript_view_id"] = -1
+
+
+def transcript_click(index):
+    st.session_state["transcript_view_id"] = index
+
 
 back_button = st.button("🔙", key="backButton")
 
-if (back_button):
+if back_button:
     st.switch_page("pages/chat.py")
 
-topics = chat.get_topics()
+topics = asyncio.run(chat.topics)
 
-topicsNames = map(lambda topic: topic.get_name(), topics)
-headertxt = " and ".join(topicsNames) + " Summary"
+
+topicsNames = map(lambda topic: topic.name, topics)
+headertxt = " and ".join([t.name for t in topics]) + " Summary"
 st.header(headertxt)
 
 # topicModified = map(lambda topic: topic.get_modified_time(), topics)
@@ -39,19 +50,30 @@ with col1:
             st.markdown(f" - {actionItem}")
 
 # TODO: change to allow for multiple meetings
-allMeetings = chat.get_topics()[0].get_meetings()
+allMeetings = asyncio.run(chat.meetings)
+transcript_buttons = []
 
 with col2.expander("Recent Meetings", expanded=True):
     for meeting in allMeetings:
         meetingContainer = st.container(border=True)
-        meetingContainer.write(meeting.get_meeting_name())
-        meetingContainer.write(        
-            datetime.strftime(
-                meeting.date,
-                "%d/%m/%y"
+        bcol1, bcol2 = meetingContainer.columns(2)  # button columns
+        with bcol1:
+            st.write(meeting.name)
+            st.write(
+                datetime.strftime(
+                    meeting.date,
+                    "%d/%m/%y"
+                )
             )
-        )
-        bcol1, bcol2, bcol3 = meetingContainer.columns(3)  # button columns
-        bcol1.button("Media")
-        bcol2.button("Transcript")
-        bcol3.button("Remove")
+        with bcol2:
+            transcript_buttons.append(
+                st.button(
+                    "Transcript", on_click=transcript_click,
+                    kwargs={"index": meeting.id}, key=f"TR-{meeting.id}"
+                )
+            )
+            # st.button("Media", k)
+            # bcol3.button("Remove")
+
+if any(transcript_buttons):
+    st.switch_page("pages/transcript_view.py")
