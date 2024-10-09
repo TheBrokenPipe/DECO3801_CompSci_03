@@ -4,14 +4,12 @@ from datetime import date
 import sys
 import os
 import asyncio
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '...')))
 from access import *
 from models import *
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from setup_test_data import setup_test_data1
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '...')))
-
 
 class Server:
 
