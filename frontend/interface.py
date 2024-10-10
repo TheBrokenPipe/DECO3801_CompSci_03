@@ -262,10 +262,18 @@ class Chat:
         return await update_table_from_model(self._chat)
 
     def get_summary(self) -> str:
-        return "Summary for \"" + self.name + "\" (" + str(self.id) + ") Go HERE"
+        result = ""
+        for meeting in asyncio.run(self.meetings):
+            result += meeting.get_meeting_summary() + "\n\n"
+        return result.strip()
+        # return "Summary for \"" + self.name + "\" (" + str(self.id) + ") Go HERE"
 
     def get_action_items(self) -> list[str]:
-        return ["thing 1", "thing 2"]
+        result = []
+        for meeting in asyncio.run(self.meetings):
+            result += asyncio.run(meeting.action_items)
+        return result
+        # return ["thing 1", "thing 2"]
 
 
 # server = Server()

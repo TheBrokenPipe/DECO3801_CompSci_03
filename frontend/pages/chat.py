@@ -29,7 +29,7 @@ def btn_click(index):
 chats = asyncio.run(Server.get_all_chats())
 # print(chats[0].history)
 if len(chats) == 0:
-    asyncio.run(Server.create_chat("First Chat"))
+    asyncio.run(Server.create_chat("First Chat", []))
     chats = asyncio.run(Server.get_all_chats())
 
 # chat_names = []
