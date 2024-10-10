@@ -81,7 +81,7 @@ class DB_Manager:
                 meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
                 metadata JSONB,
                 text TEXT,
-                embedding VECTOR({os.getenv('VECTOR_SIZE')})
+                embedding VECTOR({os.getenv('VECTOR_SIZE',768)})
             );
             """
         )
