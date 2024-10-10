@@ -42,3 +42,5 @@ if want_create:
             [m for m in existing_meetings if m.name.lower() in selected_meetings]
         )
     )
+
+    st.switch_page("pages/chat.py")

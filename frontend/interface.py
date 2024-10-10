@@ -11,6 +11,7 @@ from models import *
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from setup_test_data import setup_test_data1
 
+
 class Server:
 
     @staticmethod
