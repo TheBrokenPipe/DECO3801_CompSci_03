@@ -29,7 +29,8 @@ selected_meetings = stt.st_tags(
     text='Press enter to add more',
     value=[],
     suggestions=[m.name for m in existing_meetings],
-    key="hello")
+    key="hello"
+)
 
 want_create = st.button("Create")
 

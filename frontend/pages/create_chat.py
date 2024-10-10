@@ -43,3 +43,5 @@ if want_create:
             [t for t in existing_topics if t.name.lower() in selected_topics]
         )
     )
+
+    st.switch_page("pages/chat.py")
