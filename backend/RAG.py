@@ -16,6 +16,7 @@ from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_postgres import PGVector
 
+
 class KeyPoints(BaseModel):
     """
     key_points: list of key points mentioned in text
@@ -29,6 +30,7 @@ class ActionItems(BaseModel):
     """
     action_items: list[str]
 
+
 class RAG:
 
     def __init__(self):
@@ -36,8 +38,8 @@ class RAG:
         if "OPENAI_API_KEY" in os.environ:
             self.llm = ChatOpenAI(model=os.getenv("OPENAI_LLM_MODEL", "gpt-4o-mini"), temperature=0.2)
 
-            if os.getenv("EMBED_PROVIDER","ollama") == "openai":
-                self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+            if os.getenv("EMBED_PROVIDER", "openai") == "openai":
+                self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=1000)
             else:
                 self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
             
@@ -114,22 +116,25 @@ class RAG:
         }
     
     def embed_meeting(self, meeting: DB_Meeting, chunks: list[Document]):
-        for doc in chunks:
+        for chunk in chunks:
             if isinstance(self.embeddings, OllamaEmbeddings):
-                doc.page_content = "search_document: " + doc.page_content
-            doc.metadata["meeting_id"] = meeting.id
+                chunk.page_content = "search_document: " + chunk.page_content
+            chunk.metadata["meeting_id"] = meeting.id
         
         self.vector_store.add_documents(chunks)
 
     def format_docs(self, docs):
         return "\n\n".join(doc.page_content for doc in docs)
 
-    def query_retrieval(self, query_text):
+    def query_retrieval(self, query_text) -> str:
         retriever = self.vector_store.as_retriever()
-        system_prompt = "You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, say that you don't know. Do not include any general information unless necessary. Use three sentences maximum and keep the answer concise. \n\n Context: {context}"
-        prompt = ChatPromptTemplate.from_messages(
-            [("system",system_prompt,),
-                ("human", "{question}"),])
+        system_prompt = (
+            "You are an assistant for question-answering tasks. Use the following pieces of "
+            "retrieved context to answer the question. If you don't know the answer, say that "
+            "you don't know. Do not include any general information unless necessary. "
+            "Use three sentences maximum and keep the answer concise. \n\n Context: {context}"
+        )
+        prompt = ChatPromptTemplate.from_messages([("system", system_prompt,), ("human", "{question}")])
 
         qa_chain = (
             {"context": retriever | self.format_docs, "question": RunnablePassthrough()}

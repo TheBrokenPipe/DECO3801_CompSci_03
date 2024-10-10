@@ -4,14 +4,12 @@ from datetime import date
 import sys
 import os
 import asyncio
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '...')))
 from access import *
 from models import *
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from setup_test_data import setup_test_data1
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '...')))
-
 
 class Server:
 
@@ -28,8 +26,25 @@ class Server:
         return list(reversed([Chat(c) for c in await select_many_from_table(DB_Chat)]))
 
     @staticmethod
-    async def get_chat_by_id(id):
+    async def get_latest_chats() -> Chat:
+        return Chat(
+            await AccessBase.db_fetchone(
+                """
+                    SELECT * FROM chat
+                    ORDER BY id
+                    DESC LIMIT 1;
+                """,
+                function=lambda f: DB_Chat(**f)
+            )
+        )
+
+    @staticmethod
+    async def get_chat_by_id(id: int) -> Chat:
         return Chat(await select_from_table(DB_Chat, id))
+
+    @staticmethod
+    async def get_meeting_by_id(id: int) -> Meeting:
+        return Meeting(await select_from_table(DB_Meeting, id))
 
     @staticmethod
     async def upload_meeting(
@@ -161,7 +176,8 @@ class Meeting:
     def name(self) -> str:
         return self._meeting.name
 
-    def get_transcript(self: Meeting) -> str:
+    @property
+    def transcript(self) -> str:
         return self._meeting.file_transcript
 
     def get_original_upload(self: Meeting) -> str:
@@ -204,12 +220,8 @@ class Meeting:
 
 
 class Chat:
-    def __init__(self, chat: DB_Chat, topics: list[Topic] = None) -> None:
+    def __init__(self, chat: DB_Chat) -> None:
         self._chat = chat
-        self.topics = topics
-        self.messages = []
-        self.summary = "Summary for all meetings in all selected topics..."
-        self.action_items = ["Hi", "Hello", "G'day"]
 
     @property
     def id(self):
@@ -223,6 +235,23 @@ class Chat:
     def history(self):
         return self._chat.history
 
+    @property
+    async def topics(self) -> list[Topic]:
+        return [
+            Topic(t) for t in await select_with_joins(
+                self._chat.id, [DB_Chat, DB_ChatTag, DB_Tag]
+            )
+        ]
+
+    @property
+    async def meetings(self) -> list[Meeting]:
+        return [
+            Meeting(m) for m in await select_with_joins(
+                self._chat.id,
+                [DB_Chat, DB_ChatTag, DB_Tag, DB_MeetingTag, DB_Meeting]
+            )
+        ]
+
     async def add_message(self, username, message):
         self._chat.history.append(
             {
@@ -232,21 +261,11 @@ class Chat:
         )
         return await update_table_from_model(self._chat)
 
-    async def topics(self) -> list[Topic]:
-        return [
-            Topic(t) for t in await select_with_joins(
-                self._chat.id, [DB_Chat, DB_MeetingTag, DB_Tag]
-            )
-        ]
-
     def get_summary(self) -> str:
-        return self.summary
+        return "Summary for \"" + self.name + "\" (" + str(self.id) + ") Go HERE"
 
     def get_action_items(self) -> list[str]:
-        return self.action_items
-
-    def __str__(self) -> str:
-        return self.user.get_name() + "'s chat"
+        return ["thing 1", "thing 2"]
 
 
 # server = Server()

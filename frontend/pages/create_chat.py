@@ -8,9 +8,9 @@ with col1:
     if st.button('← Back'):
         st.switch_page("pages/chat.py")
 
-# with col2:
-#     if st.button('Help'):
-#         st.switch_page("pages/help.py")
+with col2:
+    if st.button('Help'):
+        st.switch_page("pages/help.py")
 
 topics = asyncio.run(Server.get_all_chats())
 
