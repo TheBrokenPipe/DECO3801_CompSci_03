@@ -13,13 +13,15 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_openai import OpenAIEmbeddings
 
 from models import *
+import numpy as np
+
 
 class Chunks:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        provider = os.getenv("EMBED_PROVIDER","openai") 
+        provider = os.getenv("EMBED_PROVIDER", "openai")
         if "OPENAI_API_KEY" in os.environ and provider == "openai":
-            self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+            self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=1000)
         else:
             self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
@@ -28,6 +30,13 @@ class Chunks:
             embedding = self.embeddings.embed_documents([text])[0]
         else:
             embedding = self.embeddings.embed_documents(["clustering: " + text])[0]
+        return embedding
+
+    def get_batch_embedding(self, texts: list[str]):
+        if isinstance(self.embeddings, OpenAIEmbeddings):
+            embedding = self.embeddings.embed_documents(texts)
+        else:
+            embedding = self.embeddings.embed_documents(["clustering: " + t for t in texts])  # TODO whats this?
         return embedding
 
     def load_jsonl_file(self, file_path):
@@ -60,27 +69,116 @@ class Chunks:
 
         return merged_lines
 
-    def semantic_chunking(self, merged_lines: List[dict], filename: str, threshold = 0.6) -> List[Document]:
-        embeddings = [self.get_embedding(line['text']) for line in merged_lines]
+    def semantic_chunking(self, merged_lines: List[dict], filename: str, threshold=0.6) -> List[Document]:
+        # embeddings = [self.get_embedding(line['text']) for line in merged_lines]
+        embeddings = self.get_batch_embedding([line['text'] for line in merged_lines])
 
         chunks = []
         current_chunk = []
+        current_embeds = []
         current_start_time = merged_lines[0]['start_time']
 
         for i in range(len(merged_lines)):
             current_chunk.append(merged_lines[i])
+            current_embeds.append(embeddings[i])
 
             # if len(merged_lines[i]['text'].split()) < 5:
             #     continue
-
             # Check if there is a next line to compare
             if i + 1 < len(merged_lines):
                 # Calculate similarity between the combined current chunk and the next line
                 combined_text = " ".join([line['text'] for line in current_chunk])
+                print(combined_text)
                 combined_embedding = self.get_embedding(combined_text)  # Create embedding for combined text
+                # [np.array(c) * len(current_chunk[i]['text'].split()) for i, c in enumerate(current_embeds)]
+                a = [np.array(c) * len(current_chunk[i]['text'].split()) for i, c in enumerate(current_embeds)]
+                # print(a)
+                meaned_embedding = np.mean(np.stack(
+                    a
+                ), axis=0)
+                meaned_embedding /= np.linalg.norm(meaned_embedding)
+                print(np.linalg.norm(combined_embedding))
+                print(np.linalg.norm(meaned_embedding))
+                print(np.linalg.norm(np.array(combined_embedding) - np.array(meaned_embedding)))
+                print()
+
                 next_embedding = embeddings[i + 1]
                 similarity = cosine_similarity([combined_embedding], [next_embedding])[0][0]
+                continue
+                # Threshold for creating a new chunk
+                if similarity < threshold and len(merged_lines[i+1]['text'].split()) > 5:
+                    end_time = merged_lines[i]['end_time']
+                    chunk_text = "\n".join([f"{line['speaker']}: {line['text']}" for line in current_chunk])
 
+                    # Create a LangChain document with metadata
+                    doc = Document(
+                        page_content=chunk_text,
+                        metadata={
+                            "chunk_id": len(chunks),
+                            "start_time": current_start_time,
+                            "end_time": end_time,
+                            "filename": filename
+                        }
+                    )
+                    chunks.append(doc)
+
+                    # Start new chunk
+                    current_chunk = []
+                    current_start_time = merged_lines[i + 1]['start_time']
+
+        # Add last chunk if exists
+        if current_chunk:
+            chunk_text = "\n".join([f"{line['speaker']}: {line['text']}" for line in current_chunk])
+            end_time = merged_lines[-1]['end_time']
+            doc = Document(
+                page_content=chunk_text,
+                metadata={
+                    "chunk_id": len(chunks),
+                    "start_time": current_start_time,
+                    "end_time": end_time,
+                    "filename": filename
+                }
+            )
+            chunks.append(doc)
+
+        return chunks
+
+    def semantic_chunking(self, merged_lines: List[dict], filename: str, threshold=0.6) -> List[Document]:
+        # embeddings = [self.get_embedding(line['text']) for line in merged_lines]
+        embeddings = self.get_batch_embedding([line['text'] for line in merged_lines])
+
+        chunks = []
+        current_chunk = []
+        current_embeds = []
+        current_start_time = merged_lines[0]['start_time']
+
+        for i in range(len(merged_lines)):
+            current_chunk.append(merged_lines[i])
+            current_embeds.append(embeddings[i])
+
+            # if len(merged_lines[i]['text'].split()) < 5:
+            #     continue
+            # Check if there is a next line to compare
+            if i + 1 < len(merged_lines):
+                # Calculate similarity between the combined current chunk and the next line
+                combined_text = " ".join([line['text'] for line in current_chunk])
+                print(combined_text)
+                combined_embedding = self.get_embedding(combined_text)  # Create embedding for combined text
+                # [np.array(c) * len(current_chunk[i]['text'].split()) for i, c in enumerate(current_embeds)]
+                a = [np.array(c) * len(current_chunk[i]['text'].split()) for i, c in enumerate(current_embeds)]
+                # print(a)
+                meaned_embedding = np.mean(np.stack(
+                    a
+                ), axis=0)
+                meaned_embedding /= np.linalg.norm(meaned_embedding)
+                print(np.linalg.norm(combined_embedding))
+                print(np.linalg.norm(meaned_embedding))
+                print(np.linalg.norm(np.array(combined_embedding) - np.array(meaned_embedding)))
+                print()
+
+                next_embedding = embeddings[i + 1]
+                similarity = cosine_similarity([combined_embedding], [next_embedding])[0][0]
+                continue
                 # Threshold for creating a new chunk
                 if similarity < threshold and len(merged_lines[i+1]['text'].split()) > 5:
                     end_time = merged_lines[i]['end_time']
@@ -124,7 +222,7 @@ class Chunks:
         jsonl = self.load_jsonl_file(file_path)
         merged = self.merge_speaker_lines(jsonl)
         time = monotonic()
-        chunks = self.semantic_chunking(merged,file_path)
+        chunks = self.semantic_chunking(merged, file_path, threshold=0.4)
         duration = monotonic() - time
         self.logger.debug(f"Chunked transcript in {duration:.3f}s - '{file_path}'")
         return chunks

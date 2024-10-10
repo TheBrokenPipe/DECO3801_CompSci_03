@@ -2,6 +2,22 @@ import time
 import streamlit as st
 import asyncio
 from interface import Server
+import sys, os
+
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '...')))
+
+from backend.RAG import *
+
+
+@st.cache_resource  # 👈 Add the caching decorator
+def get_rag():
+    return RAG()
+
+
+rag = get_rag()
+
 
 print("Loading Chat")
 
@@ -25,13 +41,32 @@ if "current_chat_id" not in st.session_state:
 
 print(st.session_state["current_chat_id"])
 
-current_chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
-st.title(current_chat.name)
-container = st.container(border=True)
+col1, col2 = st.columns(2)  # button columns
 
-for message in current_chat.history:
-    # print(message)
-    container.chat_message(message["username"]).markdown(message["message"])
+
+with col1:
+    current_chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
+    st.title(current_chat.name)
+    chat_container = st.container(border=True)
+
+    for message in current_chat.history:
+        # print(message)
+        chat_container.chat_message(message["username"]).markdown(message["message"])
+    chat_input = st.chat_input("Ask a question about your meetings")
+
+
+latest_meetings = asyncio.run(Server.get_all_meetings())
+
+with col2:
+    current_chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
+    st.title("Your Feed")
+    feed_container = st.container(border=True)
+
+    for meeting in latest_meetings:
+        st.text(meeting.name)
+        # print(message)
+        # feed_container.chat_message(message["username"]).markdown(message["message"])
+
 
 with st.sidebar:
     st.title("Chats")
@@ -52,20 +87,14 @@ with st.sidebar:
         new_topic_button = st.button("Create Topic")
 
 
-# col1, col2 = st.columns([18, 100])
-
-#with col1:
-#    summary_button = st.button("Summary")
-
-#with col2:
-chat_input = st.chat_input("Ask a question about your meetings")
 
 # React to user input
 if chat_input:
     asyncio.run(current_chat.add_message("User", chat_input))
-    container.chat_message("User").markdown(chat_input)
-    asyncio.run(current_chat.add_message("Assistant", chat_input))
-    container.chat_message("Assistant").markdown(chat_input)
+    chat_container.chat_message("User").markdown(chat_input)
+    response = rag.query_retrieval(chat_input)
+    asyncio.run(current_chat.add_message("Assistant", response))
+    chat_container.chat_message("Assistant").markdown(response)
 
 if new_chat_button:
     st.switch_page("pages/create_chat.py")
