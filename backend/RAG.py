@@ -56,7 +56,7 @@ class RAG:
         connection = f"postgresql+psycopg://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('HOSTNAME')}:{os.getenv('PORT')}/{os.getenv('DB_NAME')}"
         self.logger.debug(connection)
 
-        self.vector_store = PGVector(
+        self.vector_store = DB_MeetingChunk(
             embeddings=self.embeddings,
             collection_name=os.environ.get("VECTOR_STORE_NAME", "deco3801"),
             connection=connection,
@@ -131,8 +131,13 @@ class RAG:
     def format_docs(self, docs):
         return "\n\n".join(doc.page_content for doc in docs)
 
-    def query_retrieval(self, query_text) -> str:
-        retriever = self.vector_store.as_retriever()
+    def query_retrieval(self, query_text: str, topics: Optional[List[str]]) -> str:
+        if topics:
+            # to do - make retriever with filtering
+        else:
+            retriever = self.vector_store.as_retriever(search_type="similarity_score_threshold",
+                                                        search_kwargs={'k': 3, 'score_threshold': 0.8})
+
         system_prompt = (
             "You are an assistant for question-answering tasks. Use the following pieces of "
             "retrieved context to answer the question. If you don't know the answer, say that "
@@ -142,10 +147,10 @@ class RAG:
         prompt = ChatPromptTemplate.from_messages([("system", system_prompt,), ("human", "{question}")])
 
         qa_chain = (
-                {"context": retriever | self.format_docs, "question": RunnablePassthrough()}
-                | prompt
-                | self.llm
-                | StrOutputParser()
+            {"context": retriever | self.format_docs, "question": RunnablePassthrough()}
+            | prompt
+            | self.llm
+            | StrOutputParser()
         )
 
         return qa_chain.invoke(query_text)
