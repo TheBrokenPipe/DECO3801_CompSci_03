@@ -1,22 +1,15 @@
 import time
 import streamlit as st
 import asyncio
-from interface import Server
 import sys, os
 
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '...')))
 
-from backend.RAG import *
+from interface import Server
 
-
-@st.cache_resource  # 👈 Add the caching decorator
-def get_rag():
-    return RAG()
-
-
-rag = get_rag()
+st.session_state["summarise_chat"] = True
 
 
 print("Loading Chat")
@@ -87,12 +80,12 @@ with st.sidebar:
         new_topic_button = st.button("Create Topic")
 
 
-
 # React to user input
 if chat_input:
-    asyncio.run(current_chat.add_message("User", chat_input))
     chat_container.chat_message("User").markdown(chat_input)
-    response = rag.query_retrieval(chat_input)
+    send = current_chat.send_message(chat_input)
+    add_chat = current_chat.add_message("User", chat_input)
+    response, add_chat = asyncio.gather(send, add_chat)
     asyncio.run(current_chat.add_message("Assistant", response))
     chat_container.chat_message("Assistant").markdown(response)
 
@@ -100,6 +93,8 @@ if new_chat_button:
     st.switch_page("pages/create_chat.py")
 
 if summary_button:
+    st.session_state["summarise_chat"] = False
+    print("Chat State:", st.session_state["summarise_chat"])
     st.switch_page("pages/summary.py")
 
 if upload_button:

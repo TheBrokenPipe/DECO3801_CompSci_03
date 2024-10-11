@@ -2,6 +2,9 @@ import streamlit as st
 
 print("\nLoading Index")
 
+if "summarise_chat" not in st.session_state:
+    st.session_state["summarise_chat"] = True
+
 base_path = "pages/" 
 file_list = [
     'chat.py',  # keep the default page first

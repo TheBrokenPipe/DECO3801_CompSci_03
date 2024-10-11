@@ -8,8 +8,18 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '...')))
 from access import *
 from models import *
+import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from setup_test_data import setup_test_data1
+from backend.RAG import RAG
+
+
+@st.cache_resource  # 👈 Add the caching decorator
+def get_rag():
+    print("getting rag")
+    return RAG()
+
+rag = get_rag()
 
 
 class Server:
@@ -140,6 +150,10 @@ class Topic:
     async def meetings(self):
         return await select_with_joins(self._tag.name, [DB_MeetingTag, DB_Meeting])
 
+    @property
+    async def action_items(self):
+        return await select_with_joins(self._tag.name, [DB_MeetingTag, DB_Meeting, DB_ActionItem])
+
     async def add_meeting(self, meeting: DB_Meeting) -> None:
         await insert_into_table(
             DB_MeetingTag(
@@ -181,9 +195,6 @@ class Meeting:
     def transcript(self) -> str:
         return self._meeting.file_transcript
 
-    def get_original_upload(self: Meeting) -> str:
-        return self._meeting.file_recording
-
     @property
     def date(self: Meeting) -> datetime:
         return self._meeting.date
@@ -196,24 +207,28 @@ class Meeting:
             )
         ]
 
-    def get_meeting_summary(self: Meeting) -> str:
+    @property
+    def summary(self: Meeting) -> str:
         return self._meeting.summary
 
     @property
     async def action_items(self: Meeting) -> list[str]:
-        return ["ACTION!!!"]
         return [
-            Topic(t) for t in await select_with_joins(
-                self._meeting.id, [DB_Meeting, DB_MeetingTag, DB_Tag]
+            a.text for a in await select_with_joins(
+                self._meeting.id,
+                [DB_Meeting, DB_ActionItem]
             )
         ]
 
-    def _link_topic(self: Meeting, topic: Topic) -> None:
-        if topic not in self._topics:
-            self._topics.append(topic)
+    def get_original_upload(self: Meeting) -> str:
+        return self._meeting.file_recording
 
-    def _unlink_topic(self: Meeting, topic: Topic) -> None:
-        self._topics.remove(topic)
+    # def _link_topic(self: Meeting, topic: Topic) -> None:
+    #     if topic not in self.topics:
+    #         self._topics.append(topic)
+
+    # def _unlink_topic(self: Meeting, topic: Topic) -> None:
+    #     self._topics.remove(topic)
 
 
     # def get_underlying_object(self: Meeting) -> backend.Meeting:
@@ -253,6 +268,27 @@ class Chat:
             )
         ]
 
+    @property
+    async def action_items(self) -> list[str]:
+        return [
+            a.text for a in await select_with_joins(
+                self._chat.id,
+                [DB_Chat, DB_ChatTag, DB_Tag, DB_MeetingTag, DB_Meeting, DB_ActionItem]
+            )
+        ]
+
+    @property
+    # @st.cache_data
+    def summary(self) -> str:
+        print("summarising")
+        return rag.summarise_chat([m.summary for m in asyncio.run(self.meetings)])
+
+        result = ""
+        for meeting in asyncio.run(self.meetings):
+            result += meeting.get_meeting_summary() + "\n\n"
+        return result.strip()
+        # return "Summary for \"" + self.name + "\" (" + str(self.id) + ") Go HERE"
+
     async def add_message(self, username, message):
         self._chat.history.append(
             {
@@ -262,12 +298,8 @@ class Chat:
         )
         return await update_table_from_model(self._chat)
 
-    def get_summary(self) -> str:
-        result = ""
-        for meeting in asyncio.run(self.meetings):
-            result += meeting.get_meeting_summary() + "\n\n"
-        return result.strip()
-        # return "Summary for \"" + self.name + "\" (" + str(self.id) + ") Go HERE"
+    async def send_message(self, text):
+        return rag.query_retrieval(text)  # chat_input  #
 
     def get_action_items(self) -> list[str]:
         result = []

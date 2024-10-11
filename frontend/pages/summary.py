@@ -19,6 +19,7 @@ chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
 if "transcript_view_id" not in st.session_state:
     st.session_state["transcript_view_id"] = -1
 
+print("Summary State:", st.session_state["summarise_chat"])
 
 def transcript_click(index):
     st.session_state["transcript_view_id"] = index
@@ -43,10 +44,14 @@ col1, col2 = st.columns(2)
 
 with col1:
     with st.expander("Summary", expanded=True):
-        st.write(chat.get_summary())
+        print(f"Session State: {st.session_state['summarise_chat']}")
+        if not st.session_state["summarise_chat"]:
+            print("ingeiof")
+            st.write(chat.summary)
+            st.session_state["summarise_chat"] = True
 
     with st.expander("Action Items", expanded=True):
-        for actionItem in chat.get_action_items():
+        for actionItem in asyncio.run(chat.action_items):
             st.markdown(f" - {actionItem}")
 
 # TODO: change to allow for multiple meetings

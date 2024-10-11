@@ -58,6 +58,7 @@ class RAG:
         )
 
     def invoke_llm(self, system_prompt: str, user_prompt: str) -> str:
+        print("invoke_llm")
         prompt = ChatPromptTemplate.from_messages(
             [("system","{system_prompt}",),
                 ("human", "{user_prompt}"),])
@@ -91,11 +92,23 @@ class RAG:
             response = None
         return response
 
-
     def abstract_summary_extraction(self, transcription):
         transcript = jsonl_to_txt(transcription)
         system_prompt = "You are a highly skilled AI trained in language comprehension and summarization. I would like you to read the following text and summarize it into a concise abstract paragraph. Aim to retain the most important points, providing a coherent and readable summary that could help a person understand the main points of the discussion without needing to read the entire text. Please avoid unnecessary details or tangential points."
         summary = self.invoke_llm(system_prompt, transcript)
+        if isinstance(self.llm, ChatOllama) and summary[:4] == "Here":
+            summary = summary[summary.find("\n\n"):].strip()
+        return summary
+
+    def summarise_chat(self, meeting_summaries: list[str]):
+        system_prompt = (
+            "You are a highly skilled AI trained in language comprehension and summarization. "
+            "I would like you to read the following meeting-summaries and summarize it into a single concise abstract paragraph. "
+            "Aim to retain the most important points, providing a coherent and readable summary "
+            "that could help a person understand the main points of the discussions without needing "
+            "to read each of the meeting summaries. Please avoid unnecessary details or tangential points."
+        )
+        summary = self.invoke_llm(system_prompt, '\n'.join(meeting_summaries))
         if isinstance(self.llm, ChatOllama) and summary[:4] == "Here":
             summary = summary[summary.find("\n\n"):].strip()
         return summary
