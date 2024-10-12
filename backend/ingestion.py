@@ -21,7 +21,7 @@ class Ingestion:
         meetings = await select_many_from_table(DB_Meeting, ["Queued"], "status")
         if not len(meetings) > 0:
             return
-        
+
         meeting = meetings[0]
         recording = meeting.file_recording
         meeting.file_transcript = self.asr.transcribe_audio_file(recording)
@@ -29,10 +29,10 @@ class Ingestion:
         await update_table_from_model(meeting)
 
     async def summarise_next_meeting(self):
-        meetings = await select_many_from_table(DB_Meeting, ["Transcribed"],("status"))
+        meetings = await select_many_from_table(DB_Meeting, ["Transcribed"], ("status"))
         if not len(meetings) > 0:
             return
-    
+
         meeting = meetings[0]
         with open(meeting.file_transcript, 'r', encoding="utf-8") as file:
             transcript = file.read()
@@ -59,13 +59,13 @@ class Ingestion:
         await update_table_from_model(meeting)
 
     async def ingest_next_meeting(self):
-        meetings = await select_many_from_table(DB_Meeting, ["Summarised"],("status"))
+        meetings = await select_many_from_table(DB_Meeting, ["Summarised"], ("status"))
         if not len(meetings) > 0:
             return
-        
+
         meeting = meetings[0]
         chunks = self.chunks.chunk_transcript(meeting)
-        
+
         self.manager.rag.embed_meeting(meeting, chunks)
 
         meeting.status = "Ready"

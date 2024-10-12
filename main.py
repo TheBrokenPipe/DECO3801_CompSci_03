@@ -1,11 +1,11 @@
 import asyncio
 import sys
+import logging
+
 from dotenv import load_dotenv
+
 from backend.docker_manager import DockerManager
 from backend.database_manager import DB_Manager
-import logging
-from models import *
-from access import *
 from backend.ingestion import Ingestion
 
 logging.basicConfig()
@@ -26,6 +26,6 @@ async def main():
             await ingestion.transcribe_next_meeting()
             await ingestion.summarise_next_meeting()
             await ingestion.ingest_next_meeting()
-        
-        
+
+
 asyncio.run(main())

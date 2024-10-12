@@ -1,8 +1,8 @@
 import os
 import logging
 
-from access import *
-from models import *
+from access import AccessBase
+
 
 class DB_Manager:
 
@@ -41,13 +41,15 @@ class DB_Manager:
 
             CREATE TABLE IF NOT EXISTS key_points (
                 id SERIAL PRIMARY KEY,
-                meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                meeting_id INTEGER REFERENCES meeting(id)
+                ON DELETE CASCADE ON UPDATE CASCADE,
                 text TEXT
             );
 
             CREATE TABLE IF NOT EXISTS action_items (
                 id SERIAL PRIMARY KEY,
-                meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                meeting_id INTEGER REFERENCES meeting(id)
+                ON DELETE CASCADE ON UPDATE CASCADE,
                 text TEXT
             );
 
@@ -58,8 +60,10 @@ class DB_Manager:
             );
 
             CREATE TABLE IF NOT EXISTS meeting_tag (
-                meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
-                tag_id INTEGER REFERENCES tag(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                meeting_id INTEGER REFERENCES meeting(id)
+                ON DELETE CASCADE ON UPDATE CASCADE,
+                tag_id INTEGER REFERENCES tag(id)
+                ON DELETE CASCADE ON UPDATE CASCADE,
                 PRIMARY KEY (meeting_id, tag_id)
             );
 
@@ -71,14 +75,17 @@ class DB_Manager:
             );
 
             CREATE TABLE IF NOT EXISTS chat_tag (
-                chat_id INTEGER REFERENCES chat(id) ON DELETE CASCADE ON UPDATE CASCADE,
-                tag_id INTEGER REFERENCES tag(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                chat_id INTEGER REFERENCES chat(id)
+                ON DELETE CASCADE ON UPDATE CASCADE,
+                tag_id INTEGER REFERENCES tag(id)
+                ON DELETE CASCADE ON UPDATE CASCADE,
                 PRIMARY KEY (chat_id, tag_id)
             );
 
             CREATE TABLE IF NOT EXISTS document (
                 id SERIAL PRIMARY KEY,
-                meeting_id INTEGER REFERENCES meeting(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                meeting_id INTEGER REFERENCES meeting(id)
+                ON DELETE CASCADE ON UPDATE CASCADE,
                 metadata JSONB,
                 text TEXT,
                 embedding VECTOR({os.getenv('VECTOR_SIZE',768)})

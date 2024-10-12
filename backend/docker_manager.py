@@ -35,52 +35,58 @@ class DockerManager:
             self.volume = client.volumes.create(name=volume_name)
             self.logger.debug(f"Volume '{volume_name}' created.")
 
-    def create_container(self):  # Check if the container already exists
+    def create_container(self):
+        container_name = os.getenv("CONTAINER_NAME")
+        volume_name = os.getenv("VOLUME_NAME")
+        self.logger.debug(f"Creating container '{container_name}'...")
+        # Run a new PostgreSQL container with the persistent volume
+        environment = {
+                "POSTGRES_USER": os.getenv("DB_USER"),
+                "POSTGRES_PASSWORD": os.getenv("DB_PASSWORD"),
+                "POSTGRES_DB": os.getenv("DB_NAME"),
+            }
+        self.logger.debug(environment)
+        self.container = client.containers.run(
+            image="pgvector/pgvector:pg16",
+            name=container_name,
+            environment=environment,
+            # Expose PostgreSQL port 5432
+            ports={"5432/tcp": os.getenv("PORT")},
+            # Mount volume to persist data
+            volumes={
+                volume_name: {'bind': '/var/lib/postgresql/data',
+                              'mode': 'rw'}
+            },
+            # Run container in the background
+            detach=True,
+        )
+        while True:
+            try:
+                time.sleep(5)
+                conn = psycopg.connect(
+                    # Usually 'localhost' to connect to a Docker container
+                    host=os.getenv("HOSTNAME"),
+                    # Port that PostgreSQL is exposed on
+                    port=os.getenv("PORT"),
+                    dbname=os.getenv("DB_NAME"),
+                    user=os.getenv("DB_USER"),
+                    password=os.getenv("DB_PASSWORD")
+                )
+                conn.close()
+                self.logger.debug("PostgreSQL is ready for operation.")
+                break
+            except psycopg.OperationalError:
+                self.logger.debug("PostgreSQL not ready, retrying in 5s ...")
+
+    def setup_container(self):
+        # Check if the container already exists
         container_name = os.getenv("CONTAINER_NAME")
         try:
             self.container = client.containers.get(container_name)
-            self.logger.debug(f"Container '{container_name}' already exists. Starting...")
+            self.logger.debug(f"Starting container '{container_name}'...")
             self.container.start()
         except docker.errors.NotFound:
-            self.logger.debug(f"Container '{container_name}' does not exist. Proceeding to create...")
-            # If the container does not exist, run a new PostgreSQL container with the persistent volume
-            try:
-                environment={
-                        "POSTGRES_USER": os.getenv("DB_USER"),
-                        "POSTGRES_PASSWORD": os.getenv("DB_PASSWORD"),
-                        "POSTGRES_DB": os.getenv("DB_NAME"),
-                    }
-                self.logger.debug(environment)
-                self.container = client.containers.run(
-                    image="pgvector/pgvector:pg16",
-                    name=container_name,
-                    environment=environment,
-                    ports={"5432/tcp": os.getenv("PORT")},  # Expose PostgreSQL port 5432
-                    volumes={
-                        os.getenv("VOLUME_NAME"): {'bind': '/var/lib/postgresql/data', 'mode': 'rw'}
-                    },  # Mount volume to persist data
-                    detach=True,  # Run container in the background
-                )
-                time.sleep(5)
-                while True:
-                    try:
-                        conn = psycopg.connect(
-                            host=os.getenv("HOSTNAME"),  # Use 'localhost' since we're connecting to the Docker container
-                            port=os.getenv("PORT"),  # Port that PostgreSQL is exposed on
-                            dbname=os.getenv("DB_NAME"),
-                            user=os.getenv("DB_USER"),
-                            password=os.getenv("DB_PASSWORD")
-                        )
-                        conn.close()
-                        self.logger.debug("PostgreSQL is ready for operation.")
-                        break
-                    except psycopg.OperationalError:
-                        self.logger.debug("PostgreSQL is not ready yet, retrying in 5 seconds...")
-                        time.sleep(5)
-
-            except Exception as e:
-                self.logger.error(f"An error occurred: {e}")
-                exit(1)
+            self.create_container()
 
         self.logger.info("Container running.")
 
@@ -96,7 +102,7 @@ class DockerManager:
 
     def full_setup(self):
         self.create_volume()
-        self.create_container()
+        self.setup_container()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.cleanup(stop=self.stop_when_done, remove=self.remove_when_done)

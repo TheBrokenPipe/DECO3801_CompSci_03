@@ -1,14 +1,15 @@
 import os
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import logging
 from datetime import datetime
 
 from .RAG import RAG
-from models import *
-from access import *
 
-from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from models import DB_Meeting, DB_MeetingTag, DB_Tag
+from models import DB_ActionItem, DB_KeyPoint
+from access import select_many_from_table, insert_into_table, select_with_joins
 
 
 class Manager:
@@ -27,7 +28,10 @@ class Manager:
 
     @classmethod
     async def create_tag(cls, name, meetings: list[DB_Meeting]) -> DB_Tag:
-        tag = await insert_into_table(DB_Tag(name=name, last_modified=datetime.now()), always_return_list=False)
+        tag = await insert_into_table(
+            DB_Tag(name=name, last_modified=datetime.now()),
+            always_return_list=False
+        )
         cls._logger.debug(f"Tag added: {tag.name}")
         await Manager.add_meetings_to_tag(tag, meetings)
         cls._logger.debug(f"Meetings added to {tag.name}")
@@ -35,7 +39,8 @@ class Manager:
 
     @classmethod
     async def create_meeting(
-            cls, name: str, date: datetime, file_recording: str, file_transcript: str, summary: str
+            cls, name: str, date: datetime, file_recording: str,
+            file_transcript: str, summary: str
     ) -> DB_Meeting:
         meeting = await insert_into_table(
             DB_Meeting(
@@ -44,7 +49,7 @@ class Manager:
                 file_recording=file_recording,
                 file_transcript=file_transcript,
                 summary=summary,
-                status = "Queued"
+                status="Queued"
             ), always_return_list=False
         )
         cls._logger.debug(f"Meeting added: {meeting.name}")
@@ -52,67 +57,36 @@ class Manager:
 
     @staticmethod
     async def create_action_item(item: str, meeting: DB_Meeting):
-        return await insert_into_table(DB_ActionItem(text=item, meeting_id=meeting.id))
+        return await insert_into_table(
+            DB_ActionItem(text=item, meeting_id=meeting.id)
+        )
 
     @staticmethod
     async def create_key_point(point: str, meeting: DB_Meeting):
-        return await insert_into_table(DB_KeyPoint(text=point, meeting_id=meeting.id))
+        return await insert_into_table(
+            DB_KeyPoint(text=point, meeting_id=meeting.id)
+        )
 
     @staticmethod
-    async def add_meetings_to_tag(tag: DB_Tag, meetings: DB_Meeting | list[DB_Meeting]) -> list[DB_MeetingTag]:
+    async def add_meetings_to_tag(
+            tag: DB_Tag, meetings: DB_Meeting | list[DB_Meeting]
+    ) -> list[DB_MeetingTag]:
+
         if isinstance(meetings, DB_Meeting):
-            return await insert_into_table(DB_MeetingTag(meeting_id=meetings.id, tag_id=tag.id))
+            return await insert_into_table(
+                DB_MeetingTag(meeting_id=meetings.id, tag_id=tag.id)
+            )
         elif isinstance(meetings, list) and len(meetings):
-            return await insert_into_table([DB_MeetingTag(meeting_id=meeting.id, tag_id=tag.id) for meeting in meetings])
+            meeting_tags = []
+            for meeting in meetings:
+                meeting_tags.append(
+                    DB_MeetingTag(meeting_id=meeting.id, tag_id=tag.id)
+                )
+            return await insert_into_table(meeting_tags)
 
     @staticmethod
     async def get_tag_meetings(tag: DB_Tag) -> list[DB_Meeting]:
-        return await select_with_joins(tag.id, [DB_Tag, DB_MeetingTag, DB_Meeting])
-
-    def upload_file_from_streamlit(self, uploaded_file: streamFile):
-        time_tag = datetime.now().timestamp()
-        audio_file_path = f"audio_recordings/audio_uploaded_{time_tag}.wav"
-
-        # Open a file in write-binary mode and write the contents of the uploaded file to it
-        with open(audio_file_path, 'wb') as f:
-            f.write(uploaded_file.getbuffer().tobytes())
-
-        print(f"File saved to {audio_file_path}")
-        """from uploaded file"""
-        # Save the uploaded file to a temporary file
-        # print(uploaded_file.read())
-        # return 1
-        # with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        #     tmp_file.write(uploaded_file.read())
-        #     tmp_file_path = tmp_file.name
-        transcription = self.asr.transcribe_audio(uploaded_file)
-        # self.rag.extract_objects(transcription)
-        # exit()
-        summary = self.rag.summarise_meeting(transcription)['abstract_summary']  # TODO just using the abstract for now
-        save_transcript_file_path = self.file_manager.save_text_file(summary)
-        self.rag.add_document(summary, save_transcript_file_path)
-        self.file_manager.save(self.rag.vdb_index, self.rag.link_db)
-
-    def add_audio_meeting_transcript_document(self, file_path: str):
-
-        """from path"""
-        # assert False  # TODO save transcript as a txt file
-        transcription = self.asr.transcribe_audio_file(file_path)
-        summary = self.rag.summarise_meeting(transcription)['abstract_summary']  # TODO just using the abstract for now
-        save_transcript_file_path = self.file_manager.save_text_file(summary)
-        self.rag.add_document(summary, save_transcript_file_path)
-        self.file_manager.save(self.rag.vdb_index, self.rag.link_db)
-
-    def add_text_document(self, file_path: str):
-        """from path"""
-        with open(file_path, "r") as file:
-            text = str(file.read())
-        summary = self.rag.summarise_meeting(text)
-        print(summary)
-        return summary
-        self.rag.add_document(text, file_path)
-        self.file_manager.save(self.rag.vdb_index, self.rag.link_db)
-
-    def query(self, query_text: str):
-        return self.rag.query(query_text)
-    
+        meetings = await select_with_joins(
+            tag.id, [DB_Tag, DB_MeetingTag, DB_Meeting]
+        )
+        return meetings
