@@ -12,9 +12,9 @@ from streamlit.runtime.uploaded_file_manager import UploadedFile as streamFile
 
 
 class Manager:
+    _logger = logging.getLogger(__name__)
 
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
         self.rag = RAG()
 
     @staticmethod
@@ -25,17 +25,17 @@ class Manager:
     async def get_all_tags() -> list[DB_Tag]:
         return await select_many_from_table(DB_Tag)
 
-    @staticmethod
-    async def create_tag(name, meetings: list[DB_Meeting]) -> DB_Tag:
+    @classmethod
+    async def create_tag(cls, name, meetings: list[DB_Meeting]) -> DB_Tag:
         tag = await insert_into_table(DB_Tag(name=name, last_modified=datetime.now()), always_return_list=False)
-        print(f"Tag added: {tag.name}")
+        cls._logger.debug(f"Tag added: {tag.name}")
         await Manager.add_meetings_to_tag(tag, meetings)
-        print(f"Meetings added")
+        cls._logger.debug(f"Meetings added to {tag.name}")
         return tag
 
-    @staticmethod
+    @classmethod
     async def create_meeting(
-            name: str, date: datetime, file_recording: str, file_transcript: str, summary: str
+            cls, name: str, date: datetime, file_recording: str, file_transcript: str, summary: str
     ) -> DB_Meeting:
         meeting = await insert_into_table(
             DB_Meeting(
@@ -47,7 +47,7 @@ class Manager:
                 status = "Queued"
             ), always_return_list=False
         )
-        print(f"Meeting added: {meeting.name}")
+        cls._logger.debug(f"Meeting added: {meeting.name}")
         return meeting
 
     @staticmethod
