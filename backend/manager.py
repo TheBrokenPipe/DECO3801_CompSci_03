@@ -4,7 +4,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import logging
 from datetime import datetime
 
-from .file_manager import FileManager
 from .RAG import RAG
 from models import *
 from access import *

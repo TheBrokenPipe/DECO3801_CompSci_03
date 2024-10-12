@@ -2,10 +2,9 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import logging
+import json
 
-from .file_manager import FileManager
 from models import *
-from utils import *
 
 from pydantic import BaseModel, ValidationError
 from langchain_core.prompts import ChatPromptTemplate
@@ -67,6 +66,19 @@ class RAG:
         response = session.invoke({"system_prompt": system_prompt, "user_prompt": user_prompt})
         return response
     
+    def seg_to_txt(self, segment) -> str:
+        """Format transcript segment as plain text."""
+        text = segment["text"].strip()
+        speaker = "UNKNOWN_SPEAKER" if not "speaker" in segment else segment["speaker"]
+        return f'{speaker}: {text}'
+
+    def jsonl_to_txt(self, jsonl: str) -> str:
+        """Convert JSONL transcript to basic transcript with speaker labels."""
+        segments = (json.loads(seg) for seg in jsonl.split('\n'))
+        transcript = "\n".join(self.seg_to_txt(segment)
+                                for segment in segments)
+        return transcript
+
     @staticmethod
     def check_none(model: BaseModel) -> BaseModel:
         if model is None:
@@ -93,7 +105,7 @@ class RAG:
         return response
 
     def abstract_summary_extraction(self, transcription):
-        transcript = jsonl_to_txt(transcription)
+        transcript = self.jsonl_to_txt(transcription)
         system_prompt = "You are a highly skilled AI trained in language comprehension and summarization. I would like you to read the following text and summarize it into a concise abstract paragraph. Aim to retain the most important points, providing a coherent and readable summary that could help a person understand the main points of the discussion without needing to read the entire text. Please avoid unnecessary details or tangential points."
         summary = self.invoke_llm(system_prompt, transcript)
         if isinstance(self.llm, ChatOllama) and summary[:4] == "Here":
@@ -114,11 +126,11 @@ class RAG:
         return summary
 
     def key_points_extraction(self, transcription):
-        transcript = jsonl_to_txt(transcription)
+        transcript = self.jsonl_to_txt(transcription)
         return self.extract_specific_objects(transcript, KeyPoints)
 
     def action_item_extraction(self, transcription):
-        transcript = jsonl_to_txt(transcription)
+        transcript = self.jsonl_to_txt(transcription)
         return self.extract_specific_objects(transcript, ActionItems)
 
     def summarise_meeting(self, transcription) -> dict:
