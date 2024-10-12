@@ -2,10 +2,9 @@ import os
 import sys
 from typing import Any, List, Tuple, Optional
 
-import sqlalchemy
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import logging
+import sqlalchemy
 
 from .file_manager import FileManager
 from models import *
@@ -131,12 +130,12 @@ class RAG:
     def format_docs(self, docs):
         return "\n\n".join(doc.page_content for doc in docs)
 
-    def query_retrieval(self, query_text: str, topics: Optional[List[str]]) -> str:
+    def query_retrieval(self, query_text: str, chat_history: str, topics: Optional[List[str]]) -> str:
+        retriever = self.vector_store.as_retriever(search_type="similarity_score_threshold",
+                                                   search_kwargs={'k': 3, 'score_threshold': 0.8})
         if topics:
+            pass
             # to do - make retriever with filtering
-        else:
-            retriever = self.vector_store.as_retriever(search_type="similarity_score_threshold",
-                                                        search_kwargs={'k': 3, 'score_threshold': 0.8})
 
         system_prompt = (
             "You are an assistant for question-answering tasks. Use the following pieces of "
