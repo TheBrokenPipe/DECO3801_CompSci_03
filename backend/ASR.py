@@ -10,16 +10,18 @@ from time import monotonic
 
 class ASR:
 
-    def __init__(self, hf_token: str, cache_dir = "data/.cache", transcript_dir = "data/transcripts"):
+    def __init__(self, hf_token: str, cache_dir="data/.cache",
+                 transcript_dir="data/transcripts"):
         """Initialise an ASR instance using WhisperX."""
+
         self.hf_token = hf_token
 
         self.cache_dir = cache_dir
         os.makedirs(self.cache_dir, exist_ok=True)
-        
+
         self.transcript_dir = transcript_dir
         os.makedirs(self.transcript_dir, exist_ok=True)
-        
+
         self.logger = logging.getLogger(__name__)
 
     def transcribe_audio_file(self, file_path: str) -> str:
@@ -36,37 +38,37 @@ class ASR:
         segments = (self.seg_to_jsonl(seg) for seg in diarized['segments'])
 
         transcript = '\n'.join(segments)
+        transcript_file = (Path(file_path).stem + "_transcript.jsonl")
+        transcript_path = Path(self.transcript_dir) / transcript_file
 
-        transcript_file = Path(self.transcript_dir) / (Path(file_path).stem + "_transcript.jsonl")
+        with open(transcript_path, "w", encoding="utf-8") as jsonl_file:
+            jsonl_file.write(transcript)
 
-        with open(transcript_file, "w", encoding="utf-8") as jsonl_file:
-                jsonl_file.write(transcript)
-
-        return str(transcript_file)
+        return str(transcript_path)
 
     def transcribe_audio_file_whisperx_raw(self, file_path: str):
-        """Create transcript with speaker diarization of audio from file path."""
+        """Create a transcript with speaker diarization of an audio file."""
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
         time = monotonic()
         audio = whisperx.load_audio(file_path)
         duration = monotonic() - time
-        self.logger.debug(f"Loaded audio file in {duration:.3f} - '{file_path}'")
+        self.logger.debug(f"Loaded '{file_path}' in {duration:.3f}s")
 
         time = monotonic()
         base_transcription = self.whisperx_transcribe(device, audio)
         duration = monotonic() - time
-        self.logger.debug(f"Transcribed audio file in {duration:.3f}s - '{file_path}'")
+        self.logger.debug(f"Transcribed '{file_path}' in {duration:.3f}s")
 
         time = monotonic()
         aligned = self.whisperx_align(device, audio, base_transcription)
         duration = monotonic() - time
-        self.logger.debug(f"Aligned audio file in {duration:.3f}s - '{file_path}'")
+        self.logger.debug(f"Aligned '{file_path}' in {duration:.3f}s")
 
         time = monotonic()
         diarized = self.whisperx_diarize(device, audio, aligned)
         duration = monotonic() - time
-        self.logger.debug(f"Diarized audio file in {duration:.3f}s - '{file_path}'")
+        self.logger.debug(f"Diarized '{file_path}' in {duration:.3f}s")
 
         return diarized
 
@@ -75,22 +77,32 @@ class ASR:
         text = segment["text"].strip()
         start = segment["start"]
         end = segment["end"]
-        speaker = "UNKNOWN_SPEAKER" if not "speaker" in segment else segment["speaker"]
-        return f'{{"speaker":"{speaker}","start_time":{start},"end_time":{end},"text":"{text}"}}'
+
+        if "speaker" in segment:
+            speaker = segment["speaker"]
+        else:
+            speaker = "UNKNOWN_SPEAKER"
+
+        timing = f'"start_time":{start},"end_time":{end}'
+        jsonl = f'{{"speaker":"{speaker}",{timing},"text":"{text}"}}'
+
+        return jsonl
 
     def whisperx_transcribe(self, device, audio):
         if device == "cuda":
             batch_size = 6
             compute_type = "float16"
-            model = whisperx.load_model(
-                "distil-large-v3", device, compute_type=compute_type)
+            model = whisperx.load_model("distil-large-v3", device,
+                                        compute_type=compute_type)
         else:
             threads = os.cpu_count()
             batch_size = 8
             compute_type = "int8"
             torch.set_num_threads(threads)
-            model = whisperx.load_model(
-                "distil-large-v3", device, compute_type=compute_type, threads=threads)
+            model = whisperx.load_model("distil-large-v3", device,
+                                        compute_type=compute_type,
+                                        threads=threads)
+
         result = model.transcribe(audio, batch_size=batch_size)
         del model
         gc.collect()
