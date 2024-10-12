@@ -60,7 +60,7 @@ class Chunks:
 
         return merged_lines
 
-    def semantic_chunking(self, merged_lines: List[dict], filename: str, threshold = 0.6) -> List[Document]:
+    def semantic_chunking(self, merged_lines: List[dict], filepath: str, threshold = 0.6) -> List[Document]:
         embeddings = [self.get_embedding(line['text']) for line in merged_lines]
 
         chunks = []
@@ -93,7 +93,7 @@ class Chunks:
                             "chunk_id": len(chunks),
                             "start_time": current_start_time,
                             "end_time": end_time,
-                            "filename": filename
+                            "filepath": filepath
                         }
                     )
                     chunks.append(doc)
@@ -112,7 +112,7 @@ class Chunks:
                     "chunk_id": len(chunks),
                     "start_time": current_start_time,
                     "end_time": end_time,
-                    "filename": filename
+                    "filepath": filepath
                 }
             )
             chunks.append(doc)

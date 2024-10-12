@@ -170,7 +170,7 @@ class RAG:
     def get_sources_list(self, chunks: List[Document]) -> List[str]:
         sources = []
         for chunk in chunks:
-            transcript = chunk.metadata["filename"]
+            transcript = chunk.metadata["filepath"]
 
             meeting_name = DB_Meeting.query.filter(DB_Meeting.meeting_transcript == transcript).first()
             start_time: float = chunk.metadata["start_time"]
@@ -201,7 +201,7 @@ class DB_MeetingChunk(PGVector):
         with self._make_sync_session() as session:  # type: ignore[arg-type]
             collection = self.get_collection(session)
 
-            chunk_filepath = chunk.EmbeddingStore.cmetadata["filename"]
+            chunk_filepath = chunk.EmbeddingStore.cmetadata["filepath"]
             chunk_id = chunk.EmbeddingStore.cmetadata["chunk_id"]
 
             # create list of id's to get
@@ -212,10 +212,10 @@ class DB_MeetingChunk(PGVector):
             for i in range(chunk_id-n, chunk_id):
                 ids.append(i)
 
-            # filter to get the ids of the filename from the
+            # filter to get the ids of the filepath from the
             filter = {
                 "$and": [
-                    {"filename": {"$eq": chunk_filepath}},
+                    {"filenpath": {"$eq": chunk_filepath}},
                     {"location": {"$in": ids}},
                 ]
             }
