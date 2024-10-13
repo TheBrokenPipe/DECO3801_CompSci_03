@@ -206,7 +206,7 @@ class DB_MeetingChunk(PGVector):
         with self._make_sync_session() as session:  # type: ignore[arg-type]
             collection = self.get_collection(session)
 
-            chunk_filepath = chunk.EmbeddingStore.cmetadata["meeting_id"]
+            meeting_id = chunk.EmbeddingStore.cmetadata["meeting_id"]
             chunk_id = chunk.EmbeddingStore.cmetadata["chunk_id"]
 
             # create list of id's to get
@@ -220,7 +220,7 @@ class DB_MeetingChunk(PGVector):
             # filter to get the ids of the filepath from the
             filter = {
                 "$and": [
-                    {"meeting_id": {"$eq": chunk_filepath}},
+                    {"meeting_id": {"$eq": meeting_id}},
                     {"chunk_id": {"$in": ids}},
                 ]
             }
