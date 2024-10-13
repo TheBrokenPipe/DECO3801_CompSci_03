@@ -1,15 +1,13 @@
 import asyncio
 import sys
 import logging
+import argparse
 
 from dotenv import load_dotenv
 
 from backend.docker_manager import DockerManager
 from backend.database_manager import DB_Manager
 from backend.ingestion import Ingestion
-
-logging.basicConfig()
-logging.getLogger().setLevel(logging.INFO)
 
 load_dotenv()
 
@@ -18,6 +16,19 @@ if sys.platform == "win32":
 
 
 async def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-v", "--verbose",
+                        help="increase output verbosity",
+                        action="store_true")
+
+    args = parser.parse_args()
+
+    logging.basicConfig()
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+    else:
+        logging.getLogger().setLevel(logging.WARNING)
+
     with DockerManager(stop_when_done=False) as m:
         m.full_setup()
         await DB_Manager.full_setup()
