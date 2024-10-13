@@ -10,9 +10,9 @@ import requests
 import tqdm
 from dotenv import load_dotenv
 
-from backend.manager import Manager
-from backend.docker_manager import DockerManager
-from backend.database_manager import DB_Manager
+from minutes_in_seconds import DockerManager
+from minutes_in_seconds import DB_Manager
+from minutes_in_seconds import Manager
 
 
 if sys.platform == "win32":
@@ -156,12 +156,14 @@ def setup_env() -> bool:
         print("Invalid database name, exiting setup")
         return False
 
-    username = input("Enter database username: ").strip()
+    username_prompt = "Enter database username (default username): "
+    username = input(username_prompt).strip() or "username"
     if not len(username) > 0:
         print("Invalid username, exiting setup")
         return False
 
-    password = input("Enter database password: ").strip()
+    password_prompt = "Enter database password (default password): "
+    password = input(password_prompt).strip() or "password"
     if not len(password) > 0:
         print("Invalid password, exiting setup")
         return False
@@ -193,13 +195,15 @@ def setup_env() -> bool:
 
 
 def setup_ollama() -> bool:
-    ollama_prompt = "Pull nomic embedding using ollama? (Y, N, default Y): "
+    ollama_prompt = "Pull nomic-embed-text from ollama? (Y, N, default Y): "
     ollama = input(ollama_prompt).strip().upper() or "Y"
     if ollama == "Y":
         try:
             subprocess.call(["ollama", "pull", "nomic-embed-text"])
         except FileNotFoundError:
-            print("ollama not found, exiting setup")
+            print("ollama command not found, if you have just installed "
+                  "ollama restart your terminal and rerun setup.py")
+            print("Exiting setup")
             return False
 
     return True

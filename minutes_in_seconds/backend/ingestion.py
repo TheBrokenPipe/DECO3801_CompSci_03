@@ -1,10 +1,8 @@
-import sys
 import os
 import logging
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from models import *
-from access import *
+from ..models import DB_Meeting
+from ..access import select_many_from_table, update_table_from_model
 from .ASR import ASR
 from .manager import Manager
 from .chunking import Chunks
@@ -18,7 +16,9 @@ class Ingestion:
         self.logger = logging.getLogger(__name__)
 
     async def transcribe_next_meeting(self):
-        meetings = await select_many_from_table(DB_Meeting, ["Queued"], "status")
+        meetings = await select_many_from_table(
+            DB_Meeting, ["Queued"], ("status")
+        )
         if not len(meetings) > 0:
             return
 
@@ -29,7 +29,9 @@ class Ingestion:
         await update_table_from_model(meeting)
 
     async def summarise_next_meeting(self):
-        meetings = await select_many_from_table(DB_Meeting, ["Transcribed"], ("status"))
+        meetings = await select_many_from_table(
+            DB_Meeting, ["Transcribed"], ("status")
+        )
         if not len(meetings) > 0:
             return
 
@@ -42,14 +44,18 @@ class Ingestion:
 
         action_items = summary["action_items"]
         if action_items is None:
-            self.logger.warning(f"Failed to extract action items meeting id {meeting.id}")
+            self.logger.warning(
+                f"Action item extraction failed for meeting id {meeting.id}"
+            )
         else:
             for action_item in action_items.action_items:
                 await self.manager.create_action_item(action_item, meeting)
 
         key_points = summary["key_points"]
         if key_points is None:
-            self.logger.warning(f"Failed to extract key points meeting id {meeting.id}")
+            self.logger.warning(
+                f"Key points extraction failed for meeting id {meeting.id}"
+            )
         else:
             for key_point in key_points.key_points:
                 await self.manager.create_key_point(key_point, meeting)
@@ -59,7 +65,9 @@ class Ingestion:
         await update_table_from_model(meeting)
 
     async def ingest_next_meeting(self):
-        meetings = await select_many_from_table(DB_Meeting, ["Summarised"], ("status"))
+        meetings = await select_many_from_table(
+            DB_Meeting, ["Summarised"], ("status")
+        )
         if not len(meetings) > 0:
             return
 

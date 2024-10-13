@@ -4,11 +4,11 @@ A web application where users can upload meetings and meeting-like events, which
 **Please note that a full installation from scratch will need 5 to 20+ GB of free disk space.**
 
 ## Installation
-1. Install Python 3 (minimum Python version 3.10) - 
+1. Install Python 3 from [here](https://www.python.org/downloads/)
 2. Install Docker 
 3. Install pytorch 
 4. Install remaining python dependencies by running `pip install -r requirements.txt`
-5. Install Ollama
+5. Install Ollama from [here](https://ollama.com/download)
 
 ## Setup
 Make sure Docker is running, then run `python setup.py` and follow the prompts.

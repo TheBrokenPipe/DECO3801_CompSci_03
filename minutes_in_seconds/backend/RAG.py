@@ -1,5 +1,4 @@
 import os
-import sys
 
 import logging
 import json
@@ -13,8 +12,7 @@ from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_postgres import PGVector
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from models import DB_Meeting
+from ..models import DB_Meeting
 
 
 class KeyPoints(BaseModel):
@@ -69,7 +67,6 @@ class RAG:
         )
 
     def invoke_llm(self, system_prompt: str, user_prompt: str) -> str:
-        print("invoke_llm")
         prompt = ChatPromptTemplate.from_messages(
             [("system", "{system_prompt}",),
                 ("human", "{user_prompt}"),])

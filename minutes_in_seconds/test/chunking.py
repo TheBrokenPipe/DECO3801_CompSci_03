@@ -1,10 +1,7 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from time import monotonic
 
-from backend.chunking import Chunks
+from ..backend.chunking import Chunks
 # test
 file_path = "data/transcripts/ES2002d.Mix-Headset_transcript.jsonl"
 # file_path = "data/ES2002d.Mix-Headset_transcript.jsonl"

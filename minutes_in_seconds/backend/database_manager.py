@@ -1,7 +1,7 @@
 import os
 import logging
 
-from access import AccessBase
+from ..access import AccessBase
 
 
 class DB_Manager:

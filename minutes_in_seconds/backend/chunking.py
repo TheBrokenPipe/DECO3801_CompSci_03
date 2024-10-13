@@ -1,7 +1,4 @@
-import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import logging
 import json
 from typing import List
@@ -12,7 +9,7 @@ from langchain_community.utils.math import cosine_similarity
 from langchain_ollama import OllamaEmbeddings
 from langchain_openai import OpenAIEmbeddings
 
-from models import DB_Meeting
+from ..models import DB_Meeting
 
 
 class Chunks:
