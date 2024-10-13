@@ -1,7 +1,7 @@
 # other imports
 import streamlit as st
 import datetime
-from minutes_in_seconds.frontend.interface import server, Topic
+from MIS.frontend.interface import server, Topic
 
 
 def header():

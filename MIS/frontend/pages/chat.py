@@ -2,7 +2,7 @@ import time
 import streamlit as st
 import asyncio
 
-from minutes_in_seconds.frontend.interface import Server
+from MIS.frontend.interface import Server
 
 st.session_state["summarise_chat"] = True
 

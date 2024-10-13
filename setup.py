@@ -10,9 +10,9 @@ import requests
 import tqdm
 from dotenv import load_dotenv
 
-from minutes_in_seconds import DockerManager
-from minutes_in_seconds import DB_Manager
-from minutes_in_seconds import Manager
+from MIS import DockerManager
+from MIS import DB_Manager
+from MIS import Manager
 
 
 if sys.platform == "win32":

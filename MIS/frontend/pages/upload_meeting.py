@@ -1,7 +1,7 @@
 
 import streamlit as st
 import streamlit_tags as stt
-from minutes_in_seconds.frontend.interface import Server
+from MIS.frontend.interface import Server
 import asyncio
 
 want_back = None

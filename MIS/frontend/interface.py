@@ -3,12 +3,12 @@ from typing import List
 from datetime import date
 import asyncio
 
-from minutes_in_seconds.access import *
-from minutes_in_seconds.models import *
+from MIS.access import *
+from MIS.models import *
 import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from setup_test_data import setup_test_data1
-from minutes_in_seconds.backend.RAG import RAG
+from MIS.backend.RAG import RAG
 
 
 @st.cache_resource  # 👈 Add the caching decorator

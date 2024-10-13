@@ -1,5 +1,5 @@
 import streamlit as st
-from minutes_in_seconds.frontend.interface import Server
+from MIS.frontend.interface import Server
 import streamlit_tags as stt
 import asyncio
 

@@ -4,7 +4,7 @@ import streamlit as st
 from datetime import datetime
 import random
 import asyncio
-from minutes_in_seconds.frontend.interface import Server
+from MIS.frontend.interface import Server
 
 if "current_chat_id" not in st.session_state:
     st.session_state["current_chat_id"] = asyncio.run(Server.get_latest_chats()).id

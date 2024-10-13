@@ -1,4 +1,4 @@
-# Minutes in Seconds
+# Minutes in Seconds (MIS)
 A web application where users can upload meetings and meeting-like events, which are transcribed and summarised. Then, users can query within or across the context of all the meetings.
 
 **Please note that a full installation from scratch will need 5 to 20+ GB of free disk space.**
@@ -15,7 +15,7 @@ Make sure Docker is running, then run `python setup.py` and follow the prompts.
 
 ## Usage
 "Minutes in Seconds" is split into frontend and backend components. Start by making sure Docker is running, then run the relevant commands below to start each component:
-   *  Frontend - `streamlit run frontend/index.py`
+   *  Frontend - `streamlit run MIS/frontend/index.py`
    *  Backend - `python main.py`
 
 ## Production Dependencies
