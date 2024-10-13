@@ -61,8 +61,6 @@ class Chunks:
         return merged_lines
 
     def semantic_chunking(self, merged_lines: List[dict], filepath: str, threshold=0.6) -> List[Document]:
-        # add topics to parameters as list of ints (tag ids)
-
         embeddings = [self.get_embedding(line['text']) for line in merged_lines]
 
         chunks = []
@@ -71,9 +69,6 @@ class Chunks:
 
         for i in range(len(merged_lines)):
             current_chunk.append(merged_lines[i])
-
-            # if len(merged_lines[i]['text'].split()) < 5:
-            #     continue
 
             # Check if there is a next line to compare
             if i + 1 < len(merged_lines):
@@ -96,7 +91,6 @@ class Chunks:
                             "start_time": current_start_time,
                             "end_time": end_time,
                             "filepath": filepath
-                            # "topics": topics
                         }
                     )
                     chunks.append(doc)
@@ -116,7 +110,6 @@ class Chunks:
                     "start_time": current_start_time,
                     "end_time": end_time,
                     "filepath": filepath
-                    # "topics": topics
                 }
             )
             chunks.append(doc)
@@ -129,7 +122,6 @@ class Chunks:
         merged = self.merge_speaker_lines(jsonl)
         time = monotonic()
         chunks = self.semantic_chunking(merged,file_path)
-        # chunks = self.semantic_chunking(merged, file_path, topics)
         duration = monotonic() - time
         self.logger.debug(f"Chunked transcript in {duration:.3f}s - '{file_path}'")
         return chunks
