@@ -1,13 +1,8 @@
 import time
 import streamlit as st
 import asyncio
-import sys, os
 
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '...')))
-
-from interface import Server
+from minutes_in_seconds.frontend.interface import Server
 
 st.session_state["summarise_chat"] = True
 

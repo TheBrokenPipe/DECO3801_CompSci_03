@@ -1,14 +1,10 @@
-# allowing to work with the intergace in parent directory
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # other imports
 import streamlit as st
 from datetime import datetime
 import random
 import asyncio
-from interface import Server
+from minutes_in_seconds.frontend.interface import Server
 
 if "current_chat_id" not in st.session_state:
     st.session_state["current_chat_id"] = asyncio.run(Server.get_latest_chats()).id

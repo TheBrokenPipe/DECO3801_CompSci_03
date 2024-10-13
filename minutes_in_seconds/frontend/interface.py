@@ -1,17 +1,14 @@
 from __future__ import annotations
 from typing import List
 from datetime import date
-import sys
-import os
 import asyncio
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '...')))
-from access import *
-from models import *
+
+from minutes_in_seconds.access import *
+from minutes_in_seconds.models import *
 import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from setup_test_data import setup_test_data1
-from backend.RAG import RAG
+from minutes_in_seconds.backend.RAG import RAG
 
 
 @st.cache_resource  # 👈 Add the caching decorator

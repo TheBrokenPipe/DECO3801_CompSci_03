@@ -1,6 +1,6 @@
 import streamlit as st
 import streamlit_tags as stt
-from interface import Server
+from minutes_in_seconds.frontend.interface import Server
 
 # known issue: the warning about consent only occurs twice.
 

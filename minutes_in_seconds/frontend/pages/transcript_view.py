@@ -1,7 +1,7 @@
 from datetime import datetime
 import random
 import streamlit as st
-from interface import Server
+from minutes_in_seconds.frontend.interface import Server
 import asyncio, json
 
 

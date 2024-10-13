@@ -1,5 +1,5 @@
 import streamlit as st
-from interface import Server
+from minutes_in_seconds.frontend.interface import Server
 import streamlit_tags as stt
 import asyncio
 
@@ -12,35 +12,35 @@ with col2:
     if st.button('Help'):
         st.switch_page("pages/help.py")
 
-topics = asyncio.run(Server.get_all_topics())
+topics = asyncio.run(Server.get_all_chats())
 
-with st.expander("Current Topics"):
+with st.expander("Current Chat"):
     for topic in topics:
         st.write(topic.name)
 
-st.title("Create New Topic")
+st.title("Create New Chat")
 
-meeting_name = st.text_input("New topic name:")
+meeting_name = st.text_input("New Chat name:")
 
-existing_meetings = asyncio.run(Server.get_all_meetings())
+existing_topics = asyncio.run(Server.get_all_topics())
 
-selected_meetings = stt.st_tags(
-    label='Existing Meetings',
+selected_topics = stt.st_tags(
+    label='Existing Topics',
     text='Press enter to add more',
     value=[],
-    suggestions=[m.name for m in existing_meetings],
+    suggestions=[t.name for t in existing_topics],
     key="hello"
 )
 
 want_create = st.button("Create")
 
 if want_create:
-    selected_meetings = [sm.lower() for sm in selected_meetings]
+    selected_topics = [st.lower() for st in selected_topics]
 
     asyncio.run(
-        Server.create_topic(
+        Server.create_chat(
             meeting_name,
-            [m for m in existing_meetings if m.name.lower() in selected_meetings]
+            [t for t in existing_topics if t.name.lower() in selected_topics]
         )
     )
 
