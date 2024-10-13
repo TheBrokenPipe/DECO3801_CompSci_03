@@ -130,11 +130,14 @@ class RAG:
     def format_docs(self, docs):
         return "\n\n".join(doc.page_content for doc in docs)
 
-    def query_retrieval(self, query_text: str, chat_history: str, topics: Optional[List[str]]) -> str:
+    def query_retrieval(self, query_text: str, topic_filter: Optional[List[int]]) -> str:
+        # topic_filter: list of topic ids
         retriever = self.vector_store.as_retriever(search_type="similarity_score_threshold",
                                                    search_kwargs={'k': 3, 'score_threshold': 0.8})
-        if topics:
-            pass
+        if topic_filter:
+            retriever = self.vector_store.as_retriever(search_type="similarity_score_threshold",
+                                                       search_kwargs={'k': 3, 'score_threshold': 0.8,
+                                                                      'filter': {"topics": {"$hasany": topic_filter}}})
             # to do - make retriever with filtering
 
         system_prompt = (
@@ -146,10 +149,10 @@ class RAG:
         prompt = ChatPromptTemplate.from_messages([("system", system_prompt,), ("human", "{question}")])
 
         qa_chain = (
-            {"context": retriever | self.format_docs, "question": RunnablePassthrough()}
-            | prompt
-            | self.llm
-            | StrOutputParser()
+                {"context": retriever | self.format_docs, "question": RunnablePassthrough()}
+                | prompt
+                | self.llm
+                | StrOutputParser()
         )
 
         return qa_chain.invoke(query_text)
@@ -180,6 +183,18 @@ class RAG:
             sources.append(source_string)
         return sources
 
+
+# comparisons for sqlalchemy - extending langchain PGVector
+COMPARISONS_TO_NATIVE = {
+    "$eq": "==",
+    "$ne": "!=",
+    "$lt": "<",
+    "$lte": "<=",
+    "$gt": ">",
+    "$gte": ">=",
+}
+
+
 class DB_MeetingChunk(PGVector):
     def _results_to_docs_and_scores(self, results: Any) -> List[Tuple[Document, float]]:
         """Return docs and scores from results."""
@@ -196,6 +211,115 @@ class DB_MeetingChunk(PGVector):
         ]
         return docs
 
+    def _handle_field_filter(self, field: str, value: Any) -> SQLColumnExpression:
+        """Create a filter for a specific field.
+
+        Args:
+            field: name of field
+            value: value to filter
+                If provided as is then this will be an equality filter
+                If provided as a dictionary then this will be a filter, the key
+                will be the operator and the value will be the value to filter by
+
+        Returns:
+            sqlalchemy expression
+        """
+        if not isinstance(field, str):
+            raise ValueError(
+                f"field should be a string but got: {type(field)} with value: {field}"
+            )
+
+        if field.startswith("$"):
+            raise ValueError(
+                f"Invalid filter condition. Expected a field but got an operator: "
+                f"{field}"
+            )
+
+        # Allow [a-zA-Z0-9_], disallow $ for now until we support escape characters
+        if not field.isidentifier():
+            raise ValueError(
+                f"Invalid field name: {field}. Expected a valid identifier."
+            )
+
+        if isinstance(value, dict):
+            # This is a filter specification
+            if len(value) != 1:
+                raise ValueError(
+                    "Invalid filter condition. Expected a value which "
+                    "is a dictionary with a single key that corresponds to an operator "
+                    f"but got a dictionary with {len(value)} keys. The first few "
+                    f"keys are: {list(value.keys())[:3]}"
+                )
+            operator, filter_value = list(value.items())[0]
+        else:  # Then we assume an equality operator
+            operator = "$eq"
+            filter_value = value
+
+        if operator in COMPARISONS_TO_NATIVE:
+            # Then we implement an equality filter
+            native = COMPARISONS_TO_NATIVE[operator]
+            return func.jsonb_path_match(
+                self.EmbeddingStore.cmetadata,
+                cast(f"$.{field} {native} $value", JSONPATH),
+                cast({"value": filter_value}, JSONB),
+            )
+        elif operator == "$between":
+            # Use AND with two comparisons
+            low, high = filter_value
+
+            lower_bound = func.jsonb_path_match(
+                self.EmbeddingStore.cmetadata,
+                cast(f"$.{field} >= $value", JSONPATH),
+                cast({"value": low}, JSONB),
+            )
+            upper_bound = func.jsonb_path_match(
+                self.EmbeddingStore.cmetadata,
+                cast(f"$.{field} <= $value", JSONPATH),
+                cast({"value": high}, JSONB),
+            )
+            return sqlalchemy.and_(lower_bound, upper_bound)
+        elif operator in {"$in", "$nin", "$like", "$ilike", "$hasany"}:
+            # We'll do force coercion to text
+            if operator in {"$in", "$nin","hasany"}:
+                for val in filter_value:
+                    if not isinstance(val, (str, int, float)):
+                        raise NotImplementedError(
+                            f"Unsupported type: {type(val)} for value: {val}"
+                        )
+
+                    if isinstance(val, bool):  # b/c bool is an instance of int
+                        raise NotImplementedError(
+                            f"Unsupported type: {type(val)} for value: {val}"
+                        )
+
+            queried_field = self.EmbeddingStore.cmetadata[field].astext
+
+            if operator in {"$in"}:
+                return queried_field.in_([str(val) for val in filter_value])
+            elif operator in {"$nin"}:
+                return ~queried_field.in_([str(val) for val in filter_value])
+            elif operator in {"$like"}:
+                return queried_field.like(filter_value)
+            elif operator in {"$ilike"}:
+                return queried_field.ilike(filter_value)
+            elif operator in {"$hasany"}:
+                return queried_field.has_any([str(val) for val in filter_value])
+            else:
+                raise NotImplementedError()
+        elif operator == "$exists":
+            if not isinstance(filter_value, bool):
+                raise ValueError(
+                    "Expected a boolean value for $exists "
+                    f"operator, but got: {filter_value}"
+                )
+            condition = func.jsonb_exists(
+                self.EmbeddingStore.cmetadata,
+                field,
+            )
+            return condition if filter_value else ~condition
+        else:
+            raise NotImplementedError()
+
     def get_content_with_context(self, chunk, n=2) -> str:
         # n is number of chunks to get, if n=2 it will return the original with the 2 chunks above and 2 chunks below
         with self._make_sync_session() as session:  # type: ignore[arg-type]
@@ -206,10 +330,10 @@ class DB_MeetingChunk(PGVector):
 
             # create list of id's to get
             ids = []
-            for i in range(chunk_id, chunk_id-n, -1):
+            for i in range(chunk_id, chunk_id - n, -1):
                 ids.append(i)
             ids.append(n)
-            for i in range(chunk_id-n, chunk_id):
+            for i in range(chunk_id - n, chunk_id):
                 ids.append(i)
 
             # filter to get the ids of the filepath from the
@@ -229,7 +353,7 @@ class DB_MeetingChunk(PGVector):
                 .order_by(sqlalchemy.asc(cast(self.EmbeddingStore.cmetadata["chunk_id"].astext, Integer)))  # check
                 .join(
                     self.CollectionStore,
-                    self.EmbeddingStore.collection_id == self.CollectionStore.uuid,)
+                    self.EmbeddingStore.collection_id == self.CollectionStore.uuid, )
                 .all()
             )
 
@@ -237,3 +361,12 @@ class DB_MeetingChunk(PGVector):
         doc_content = "\n".join(chunk.EmbeddingStore.document for chunk in consecutive_chunks)
 
         return doc_content
+
+    def add_topics(self, filepath, new_topic_id):
+        pass
+        # select all chunks with filepath 
+        # get list of collection_ids of selected chunks
+        # make new list of topic with new_topic_id added and change field in metadata to new topic list
+        # delete chunks by id from list with delete()
+        # add new chunks with add_embeddings()
+
