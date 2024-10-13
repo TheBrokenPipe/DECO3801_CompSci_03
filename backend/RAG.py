@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Any, List, Tuple, Optional
+from typing import Any, List, Tuple
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import logging
@@ -9,6 +9,7 @@ import sqlalchemy
 from .file_manager import FileManager
 from models import *
 from utils import *
+from access import *
 
 from pydantic import BaseModel, ValidationError
 from langchain_core.prompts import ChatPromptTemplate
@@ -175,9 +176,9 @@ class RAG:
     def get_sources_list(self, chunks: List[Document]) -> List[str]:
         sources = []
         for chunk in chunks:
-            transcript = chunk.metadata["meeting_id"]
+            meeting_id = chunk.metadata["meeting_id"]
 
-            meeting_name = DB_Meeting.query.filter(DB_Meeting.meeting_transcript == transcript).first()
+            meeting_name = select_from_table(DB_meeting, meeting_id).name
             start_time: float = chunk.metadata["start_time"]
             end_time: float = chunk.metadata["end_time"]
             source_string = f"{meeting_name} at {start_time:.2f} - {end_time:.2f}"
