@@ -21,7 +21,9 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_postgres import PGVector
 from sqlalchemy import SQLColumnExpression, cast, create_engine, delete, func, select, Integer
 from sqlalchemy.dialects.postgresql import JSON, JSONB, JSONPATH, UUID, insert
+from langchain.globals import set_debug
 
+set_debug(True)
 
 class KeyPoints(BaseModel):
     """
@@ -136,12 +138,11 @@ class RAG:
         if len(meetings) > 0:
             meeting_ids = [meeting.id for meeting in meetings]
             retriever = self.vector_store.as_retriever(search_type="similarity_score_threshold",
-                                                       search_kwargs={'k': 3, 'score_threshold': 0.8,
+                                                       search_kwargs={'k': 3, 'score_threshold': 0.5,
                                                                       'filter': {"meeting_id": {"$in": meeting_ids}}})
-            # to do - make retriever with filtering
         else:
             retriever = self.vector_store.as_retriever(search_type="similarity_score_threshold",
-                                                       search_kwargs={'k': 3, 'score_threshold': 0.8})
+                                                       search_kwargs={'k': 3, 'score_threshold': 0.5})
 
         system_prompt = (
             "You are an assistant for question-answering tasks. Use the following pieces of "
@@ -193,7 +194,7 @@ class DB_MeetingChunk(PGVector):
             (
                 Document(
                     id=str(result.EmbeddingStore.id),
-                    page_content=self.get_content_with_context(result, 2),
+                    page_content=self.get_content_with_context(result, 3),
                     metadata=result.EmbeddingStore.cmetadata,
                 ),
                 result.distance if self.embeddings is not None else None,
@@ -212,10 +213,10 @@ class DB_MeetingChunk(PGVector):
 
             # create list of id's to get
             ids = []
-            for i in range(chunk_id, chunk_id - n, -1):
+            for i in range(chunk_id-n, chunk_id):
                 ids.append(i)
-            ids.append(n)
-            for i in range(chunk_id - n, chunk_id):
+            ids.append(chunk_id)
+            for i in range(chunk_id+1, chunk_id+n+1):
                 ids.append(i)
 
             # filter to get the ids of the filepath from the
@@ -228,18 +229,18 @@ class DB_MeetingChunk(PGVector):
             filter_by = [self.EmbeddingStore.collection_id == collection.uuid, self._create_filter_clause(filter)]
 
             consecutive_chunks: List[Any] = (
-                select(
+                session.query(
                     self.EmbeddingStore,
                 )
                 .filter(*filter_by)
                 .order_by(sqlalchemy.asc(cast(self.EmbeddingStore.cmetadata["chunk_id"].astext, Integer)))  # check
                 .join(
                     self.CollectionStore,
-                    self.EmbeddingStore.collection_id == self.CollectionStore.uuid, )
+                    self.EmbeddingStore.collection_id == self.CollectionStore.uuid,)
                 .all()
             )
 
         # Concatenate all chunks into one string
-        doc_content = "\n".join(chunk.EmbeddingStore.document for chunk in consecutive_chunks)
+        doc_content = "\n".join(chunk.document for chunk in consecutive_chunks)
 
         return doc_content
