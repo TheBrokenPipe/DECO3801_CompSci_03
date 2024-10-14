@@ -7,7 +7,6 @@ from MIS.access import *
 from MIS.models import *
 import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
-from setup_test_data import setup_test_data1
 from MIS.backend.RAG import RAG
 
 

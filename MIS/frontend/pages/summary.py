@@ -42,7 +42,6 @@ with col1:
     with st.expander("Summary", expanded=True):
         print(f"Session State: {st.session_state['summarise_chat']}")
         if not st.session_state["summarise_chat"]:
-            print("ingeiof")
             st.write(chat.summary)
             st.session_state["summarise_chat"] = True
 
