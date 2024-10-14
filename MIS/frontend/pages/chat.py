@@ -78,13 +78,13 @@ with st.sidebar:
 # React to user input
 if chat_input:
     chat_container.chat_message("User").markdown(chat_input)
-    waiting_message = chat_container.chat_message("Assistant").markdown("Lemme see...")
-
-    response = asyncio.run(current_chat.send_message(chat_input))
     add_chat = asyncio.run(current_chat.add_message("User", chat_input))
+    waiting_message = chat_container.chat_message("Assistant").markdown("Lemme see...")
+    response, sources = asyncio.run(current_chat.send_message(chat_input))
 
     asyncio.run(current_chat.add_message("Assistant", response))
     chat_container.chat_message("Assistant").markdown(response)
+    chat_container.chat_message("Assistant").markdown(f"Sources:\n"+ "\n".join([s["meeting"].name for s in sources]))
 
 if new_chat_button:
     st.switch_page("pages/create_chat.py")

@@ -102,11 +102,13 @@ class ASR:
 
     def whisperx_transcribe(self, audio):
         """Run basic transcription of audio."""
+        model_size = os.getenv("WHISPER_MODEL", "distil-large-v3")
+
         if self.device == "cuda":
             # Setup for CUDA acceleration
             batch_size = 6
             compute_type = "float16"
-            model = whisperx.load_model("distil-large-v3", self.device,
+            model = whisperx.load_model(model_size, self.device,
                                         compute_type=compute_type)
         else:
             # Setup for CPU inference
@@ -114,7 +116,7 @@ class ASR:
             batch_size = 8
             compute_type = "int8"
             torch.set_num_threads(threads)
-            model = whisperx.load_model("distil-large-v3", self.device,
+            model = whisperx.load_model(model_size, self.device,
                                         compute_type=compute_type,
                                         threads=threads)
 

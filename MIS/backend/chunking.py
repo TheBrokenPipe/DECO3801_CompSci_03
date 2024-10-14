@@ -98,9 +98,6 @@ class Chunks:
         for i in range(len(merged_lines)):
             current_chunk.append(merged_lines[i])
 
-            # if len(merged_lines[i]['text'].split()) < 5:
-            #     continue
-
             # Check if there is a next line to compare
             if i + 1 < len(merged_lines):
                 threshold = 1 - self.thresh_multiplier(len(current_chunk), 10) * (1 - original_threshold)
@@ -126,7 +123,7 @@ class Chunks:
                             "chunk_id": len(chunks),
                             "start_time": current_start_time,
                             "end_time": end_time,
-                            "filename": filename
+                            "filepath": filepath
                         }
                     )
                     chunks.append(doc)
@@ -145,7 +142,7 @@ class Chunks:
                     "chunk_id": len(chunks),
                     "start_time": current_start_time,
                     "end_time": end_time,
-                    "filename": filename
+                    "filepath": filepath
                 }
             )
             chunks.append(doc)
