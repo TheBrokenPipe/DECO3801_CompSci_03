@@ -1,21 +1,22 @@
 # Minutes in Seconds (MIS)
 A web application where users can upload meetings and meeting-like events, which are transcribed and summarised. Then, users can query within or across the context of all the meetings.
 
-**Please note that a full installation from scratch will need 5 to 20+ GB of free disk space.**
+**Please note that a full installation from scratch will need 5 to 20+ GB of free disk space depending on model specifics and GPU acceleration.**
 
 ## Installation
 1. Install Python 3 from [here](https://www.python.org/downloads/)
-2. Install Docker 
-3. Install pytorch 
-4. Install remaining python dependencies by running `pip install -r requirements.txt`
-5. Install Ollama from [here](https://ollama.com/download)
+2. Install pytorch per instructions [here](https://pytorch.org/get-started/locally/)
+3. Install remaining python dependencies by running `pip install -r requirements.txt`
+4. Install Ollama from [here](https://ollama.com/download)
+5. Install FFmpeg
+6. Install Docker 
 
 ## Setup
 Make sure Docker is running, then run `python setup.py` and follow the prompts.
 
 ## Usage
 "Minutes in Seconds" is split into frontend and backend components. Start by making sure Docker is running, then run the relevant commands below to start each component:
-   *  Frontend - `streamlit run MIS/frontend/index.py`
+   *  Frontend - `python -m streamlit run MIS/frontend/index.py`
    *  Backend - `python main.py`
 
 ## Production Dependencies
@@ -24,7 +25,7 @@ Make sure Docker is running, then run `python setup.py` and follow the prompts.
 * [Docker](https://www.docker.com/)
 * [pgvector](https://hub.docker.com/r/pgvector/pgvector)
 * [Ollama](https://ollama.com/)
-* [FFMPEG](https://ffmpeg.org)
+* [FFmpeg](https://ffmpeg.org)
 
 ### Libraries
 * [langchain](https://github.com/langchain-ai/langchain)
