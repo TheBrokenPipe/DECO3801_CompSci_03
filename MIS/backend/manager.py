@@ -3,8 +3,7 @@ from datetime import datetime
 
 from .RAG import RAG
 
-from ..models import DB_Meeting, DB_MeetingTag, DB_Tag
-from ..models import DB_ActionItem, DB_KeyPoint
+from ..models import DB_Meeting, DB_MeetingTag, DB_Tag, DB_ActionItem, DB_KeyPoint
 from ..access import select_many_from_table, insert_into_table
 from ..access import select_with_joins
 

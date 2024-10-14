@@ -12,8 +12,6 @@ from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_postgres import PGVector
 
-from ..models import DB_Meeting
-
 
 class KeyPoints(BaseModel):
     """
@@ -39,8 +37,7 @@ class RAG:
 
             if os.getenv("EMBED_PROVIDER", "openai") == "openai":
                 embed_model = "text-embedding-3-large"
-                self.embeddings = OpenAIEmbeddings(model=embed_model,
-                                                   dimensions=1000)
+                self.embeddings = OpenAIEmbeddings(model=embed_model, dimensions=500)
             else:
                 embed_model = "nomic-embed-text"
                 self.embeddings = OllamaEmbeddings(model=embed_model)
@@ -166,7 +163,7 @@ class RAG:
             'action_items': self.action_item_extraction(transcript),
         }
 
-    def embed_meeting(self, meeting: DB_Meeting, chunks: list[Document]):
+    def embed_meeting(self, meeting, chunks: list[Document]):
         for chunk in chunks:
             if isinstance(self.embeddings, OllamaEmbeddings):
                 chunk.page_content = "search_document: " + chunk.page_content

@@ -78,9 +78,9 @@ with st.sidebar:
 # React to user input
 if chat_input:
     chat_container.chat_message("User").markdown(chat_input)
-    send = current_chat.send_message(chat_input)
-    add_chat = current_chat.add_message("User", chat_input)
-    response, add_chat = asyncio.gather(send, add_chat)
+    response = asyncio.run(current_chat.send_message(chat_input))
+    add_chat = asyncio.run(current_chat.add_message("User", chat_input))
+    # response, add_chat = asyncio.gather(send, add_chat)
     asyncio.run(current_chat.add_message("Assistant", response))
     chat_container.chat_message("Assistant").markdown(response)
 
