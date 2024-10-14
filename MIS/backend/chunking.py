@@ -10,6 +10,7 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_openai import OpenAIEmbeddings
 
 from ..models import DB_Meeting
+from math import exp
 
 
 class Chunks:
@@ -18,7 +19,7 @@ class Chunks:
         self.logger = logging.getLogger(__name__)
         provider = os.getenv("CHUNKING_EMBED_PROVIDER", "ollama")
         if "OPENAI_API_KEY" in os.environ and provider == "openai":
-            self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+            self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=500)
         else:
             self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
@@ -73,8 +74,20 @@ class Chunks:
         text = "\n".join(lines)
         return text
 
-    def semantic_chunking(self, merged_lines: List[dict], filename: str,
-                          threshold=0.6) -> List[Document]:
+    @staticmethod
+    def thresh_multiplier(lines, alpha=10, k=10):
+        return 1 - (
+            1 / (
+                1 + exp(
+                    -k*(
+                        lines/(alpha**2) - 0.5
+                    )
+                )
+            )
+        )
+
+    def semantic_chunking(self, merged_lines: List[dict], filename: str, threshold=0.6) -> List[Document]:
+        original_threshold = threshold
 
         embeddings = self.get_batch_embedding(self.get_text(merged_lines))
 
@@ -90,6 +103,8 @@ class Chunks:
 
             # Check if there is a next line to compare
             if i + 1 < len(merged_lines):
+                threshold = 1 - self.thresh_multiplier(len(current_chunk), 10) * (1 - original_threshold)
+                print(threshold)
                 # Calculate similarity between current chunk and next line
                 combined_text = " ".join(self.get_text(current_chunk))
                 # Create embedding for combined text
@@ -142,7 +157,7 @@ class Chunks:
         jsonl = self.load_jsonl_file(file_path)
         merged = self.merge_speaker_lines(jsonl)
         time = monotonic()
-        chunks = self.semantic_chunking(merged, file_path)
+        chunks = self.semantic_chunking(merged, file_path, 0.3)
         duration = monotonic() - time
         self.logger.debug(f"Chunked {file_path} in {duration:.3f}s")
         return chunks
