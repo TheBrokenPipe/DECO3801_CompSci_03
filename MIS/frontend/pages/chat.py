@@ -29,31 +29,31 @@ if "current_chat_id" not in st.session_state:
 
 print(st.session_state["current_chat_id"])
 
-col1, col2 = st.columns(2)  # button columns
+# col1, col2 = st.columns(2)  # button columns
 
 
-with col1:
-    current_chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
-    st.title(current_chat.name)
-    chat_container = st.container(border=True)
+# with col1:
+current_chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
+st.title(current_chat.name)
+chat_container = st.container(border=True)
 
-    for message in current_chat.history:
-        # print(message)
-        chat_container.chat_message(message["username"]).markdown(message["message"])
-    chat_input = st.chat_input("Ask a question about your meetings")
+for message in current_chat.history:
+    # print(message)
+    chat_container.chat_message(message["username"]).markdown(message["message"])
+chat_input = st.chat_input("Ask a question about your meetings")
 
 
 latest_meetings = asyncio.run(Server.get_all_meetings())
 
-with col2:
-    current_chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
-    st.title("Your Feed")
-    feed_container = st.container(border=True)
-
-    for meeting in latest_meetings:
-        st.text(meeting.name)
-        # print(message)
-        # feed_container.chat_message(message["username"]).markdown(message["message"])
+# with col2:
+#     current_chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
+#     st.title("Your Feed")
+#     feed_container = st.container(border=True)
+#
+#     for meeting in latest_meetings:
+#         st.text(meeting.name)
+#         # print(message)
+#         # feed_container.chat_message(message["username"]).markdown(message["message"])
 
 
 with st.sidebar:
@@ -78,9 +78,11 @@ with st.sidebar:
 # React to user input
 if chat_input:
     chat_container.chat_message("User").markdown(chat_input)
+    waiting_message = chat_container.chat_message("Assistant").markdown("Lemme see...")
+
     response = asyncio.run(current_chat.send_message(chat_input))
     add_chat = asyncio.run(current_chat.add_message("User", chat_input))
-    # response, add_chat = asyncio.gather(send, add_chat)
+
     asyncio.run(current_chat.add_message("Assistant", response))
     chat_container.chat_message("Assistant").markdown(response)
 
