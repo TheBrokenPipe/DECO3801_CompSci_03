@@ -252,8 +252,6 @@ class RAG:
         return self.invoke_llm(system_prompt, user_prompt)
 
     async def get_sources_list(self, chunks: List[Document]) -> List[str]:
-        sources = []
-
         meetings_dict = {m.id: m for m in await select_many_from_table(
             DB_Meeting,
             list(set([c.metadata["meeting_id"] for c in chunks]))
