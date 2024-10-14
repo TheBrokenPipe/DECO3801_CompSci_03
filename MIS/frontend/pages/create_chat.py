@@ -12,9 +12,9 @@ with col2:
     if st.button('Help'):
         st.switch_page("pages/help.py")
 
-topics = asyncio.run(Server.get_all_chats())
+topics = asyncio.run(Server.get_all_topics())
 
-with st.expander("Current Chat"):
+with st.expander("All Topics"):
     for topic in topics:
         st.write(topic.name)
 

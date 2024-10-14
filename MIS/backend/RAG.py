@@ -9,6 +9,7 @@ import asyncio
 
 from models import DB_Meeting
 from access import *
+from ..models import *
 
 from pydantic import BaseModel, ValidationError
 from langchain_core.prompts import ChatPromptTemplate
@@ -186,7 +187,7 @@ class RAG:
     def format_docs(self, docs):
         return "\n\n".join(doc.page_content for doc in docs)
 
-    async def query_retrieval(self, query_text: str, meetings: List[DB_Meeting]) -> str:
+    async def query_retrieval(self, query_text: str, meetings: List[DB_Meeting]) -> tuple[str, list]:
         set_debug(True)
 
         if len(meetings) > 0:
@@ -208,7 +209,6 @@ class RAG:
 
         docs = retriever.invoke(query_text)
         sources = await self.get_sources_list(docs)
-        print(sources)
 
         qa_chain = (
                 {"context": retriever | self.format_docs, "question": RunnablePassthrough()}
@@ -219,10 +219,10 @@ class RAG:
 
         llm_response = qa_chain.invoke(query_text)
         
-        response = llm_response + "\n\nSources:\n" + str(sources)
-        print(response)
+        # response = llm_response + "\n\nSources:\n" + str(sources)
+        # print(response)
 
-        return response
+        return llm_response, sources
 
     def query(self, query_text: str):
         with open(self.get_closest_docs(query_text)[0], 'r') as f:
@@ -252,17 +252,17 @@ class RAG:
         return self.invoke_llm(system_prompt, user_prompt)
 
     async def get_sources_list(self, chunks: List[Document]) -> List[str]:
-        sources = []
-        for chunk in chunks:
-            meeting_id = chunk.metadata["meeting_id"]
-
-            meeting = await select_from_table(DB_Meeting, meeting_id)
-            meeting_name = meeting.name
-            start_time: float = chunk.metadata["start_time"]
-            end_time: float = chunk.metadata["end_time"]
-            source_string = f"{meeting_name} at {start_time:.2f} - {end_time:.2f}"
-
-            sources.append(source_string)
+        meetings_dict = {m.id: m for m in await select_many_from_table(
+            DB_Meeting,
+            list(set([c.metadata["meeting_id"] for c in chunks]))
+        )}
+        sources = [
+            {
+                "start_time": chunk.metadata["start_time"],
+                "end_time": chunk.metadata["end_time"],
+                "meeting": meetings_dict[chunk.metadata["meeting_id"]]
+            } for chunk in chunks
+        ]
         return sources
 
 
