@@ -1,7 +1,14 @@
 import os
+import sys
+from typing import Any, List, Tuple
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import logging
-import json
+import sqlalchemy
+import asyncio
+
+from models import DB_Meeting
+from access import *
 
 from pydantic import BaseModel, ValidationError
 from langchain_core.prompts import ChatPromptTemplate
@@ -11,6 +18,11 @@ from langchain.docstore.document import Document
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_postgres import PGVector
+from sqlalchemy import SQLColumnExpression, cast, create_engine, delete, func, select, Integer
+from sqlalchemy.dialects.postgresql import JSON, JSONB, JSONPATH, UUID, insert
+from langchain.globals import set_debug
+
+set_debug(True)
 
 
 class KeyPoints(BaseModel):
@@ -56,7 +68,7 @@ class RAG:
         connection = f"postgresql+psycopg://{login}@{host}:{port}/{db}"
         self.logger.debug(connection)
 
-        self.vector_store = PGVector(
+        self.vector_store = DB_MeetingChunk(
             embeddings=self.embeddings,
             collection_name=os.environ.get("VECTOR_STORE_NAME", "deco3801"),
             connection=connection,
@@ -174,29 +186,43 @@ class RAG:
     def format_docs(self, docs):
         return "\n\n".join(doc.page_content for doc in docs)
 
-    def query_retrieval(self, query_text) -> str:
-        retriever = self.vector_store.as_retriever()
+    async def query_retrieval(self, query_text: str, meetings: List[DB_Meeting]) -> str:
+        set_debug(True)
+
+        if len(meetings) > 0:
+            meeting_ids = [meeting.id for meeting in meetings]
+            retriever = self.vector_store.as_retriever(search_type="similarity_score_threshold",
+                                                       search_kwargs={'k': 3, 'score_threshold': 0.5,
+                                                                      'filter': {"meeting_id": {"$in": meeting_ids}}})
+        else:
+            retriever = self.vector_store.as_retriever(search_type="similarity_score_threshold",
+                                                       search_kwargs={'k': 3, 'score_threshold': 0.5})
+
         system_prompt = (
-            "You are an assistant for question-answering tasks. Use the "
-            "following pieces of retrieved context to answer the question. "
-            "If you don't know the answer, say that you don't know. "
-            "Do not include any general information unless necessary. "
-            "Use three sentences maximum and keep the answer concise. \n\n"
-            "Context: {context}"
+            "You are an assistant for question-answering tasks. Use the following pieces of "
+            "retrieved context to answer the question. If you don't know the answer, say that "
+            "you don't know. Do not include any general information unless necessary. "
+            "Use three sentences maximum and keep the answer concise. \n\n Context: {context}"
         )
-        prompt = ChatPromptTemplate.from_messages(
-            [("system", system_prompt,), ("human", "{question}")]
-        )
+        prompt = ChatPromptTemplate.from_messages([("system", system_prompt,), ("human", "{question}")])
+
+        docs = retriever.invoke(query_text)
+        sources = await self.get_sources_list(docs)
+        print(sources)
 
         qa_chain = (
-            {"context": retriever | self.format_docs,
-             "question": RunnablePassthrough()}
-            | prompt
-            | self.llm
-            | StrOutputParser()
+                {"context": retriever | self.format_docs, "question": RunnablePassthrough()}
+                | prompt
+                | self.llm
+                | StrOutputParser()
         )
 
-        return qa_chain.invoke(query_text)
+        llm_response = qa_chain.invoke(query_text)
+        
+        response = llm_response + "\n\nSources:\n" + str(sources)
+        print(response)
+
+        return response
 
     def query(self, query_text: str):
         with open(self.get_closest_docs(query_text)[0], 'r') as f:
@@ -224,3 +250,76 @@ class RAG:
         # user_prompt = f"Context: {context}\n\nQuestion: {query_text}""
 
         return self.invoke_llm(system_prompt, user_prompt)
+
+    async def get_sources_list(self, chunks: List[Document]) -> List[str]:
+        sources = []
+        for chunk in chunks:
+            meeting_id = chunk.metadata["meeting_id"]
+
+            meeting = await select_from_table(DB_Meeting, meeting_id)
+            meeting_name = meeting.name
+            start_time: float = chunk.metadata["start_time"]
+            end_time: float = chunk.metadata["end_time"]
+            source_string = f"{meeting_name} at {start_time:.2f} - {end_time:.2f}"
+
+            sources.append(source_string)
+        return sources
+
+
+class DB_MeetingChunk(PGVector):
+    def _results_to_docs_and_scores(self, results: Any) -> List[Tuple[Document, float]]:
+        """Return docs and scores from results."""
+        docs = [
+            (
+                Document(
+                    id=str(result.EmbeddingStore.id),
+                    page_content=self.get_content_with_context(result, 3),
+                    metadata=result.EmbeddingStore.cmetadata,
+                ),
+                result.distance if self.embeddings is not None else None,
+            )
+            for result in results
+        ]
+        return docs
+
+    def get_content_with_context(self, chunk, n=2) -> str:
+        # n is number of chunks to get, if n=2 it will return the original with the 2 chunks above and 2 chunks below
+        with self._make_sync_session() as session:  # type: ignore[arg-type]
+            collection = self.get_collection(session)
+
+            meeting_id = chunk.EmbeddingStore.cmetadata["meeting_id"]
+            chunk_id = chunk.EmbeddingStore.cmetadata["chunk_id"]
+
+            # create list of id's to get
+            ids = []
+            for i in range(chunk_id-n, chunk_id):
+                ids.append(i)
+            ids.append(chunk_id)
+            for i in range(chunk_id+1, chunk_id+n+1):
+                ids.append(i)
+
+            # filter to get the ids of the filepath from the
+            filter = {
+                "$and": [
+                    {"meeting_id": {"$eq": meeting_id}},
+                    {"chunk_id": {"$in": ids}},
+                ]
+            }
+            filter_by = [self.EmbeddingStore.collection_id == collection.uuid, self._create_filter_clause(filter)]
+
+            consecutive_chunks: List[Any] = (
+                session.query(
+                    self.EmbeddingStore,
+                )
+                .filter(*filter_by)
+                .order_by(sqlalchemy.asc(cast(self.EmbeddingStore.cmetadata["chunk_id"].astext, Integer)))  # check
+                .join(
+                    self.CollectionStore,
+                    self.EmbeddingStore.collection_id == self.CollectionStore.uuid,)
+                .all()
+            )
+
+        # Concatenate all chunks into one string
+        doc_content = "\n".join(chunk.document for chunk in consecutive_chunks)
+
+        return doc_content
