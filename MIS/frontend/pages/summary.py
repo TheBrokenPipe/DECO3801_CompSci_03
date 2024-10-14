@@ -53,6 +53,13 @@ with col1:
 # TODO: change to allow for multiple meetings
 allMeetings = asyncio.run(chat.meetings)
 transcript_buttons = []
+summary_buttons = []
+
+
+@st.dialog("Meeting Summary")
+def meeting_summary_click(summary):
+    st.write(f"{summary}")
+
 
 with col2.expander("Recent Meetings", expanded=True):
     for meeting in allMeetings:
@@ -71,6 +78,13 @@ with col2.expander("Recent Meetings", expanded=True):
                 st.button(
                     "Transcript", on_click=transcript_click,
                     kwargs={"index": meeting.id}, key=f"TR-{meeting.id}"
+                )
+            )
+
+            summary_buttons.append(
+                st.button(
+                    "Summary", on_click=meeting_summary_click,
+                    kwargs={"summary": meeting.summary}, key=f"SM-{meeting.id}"
                 )
             )
             # st.button("Media", k)
