@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Dict
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import logging
@@ -22,6 +22,7 @@ from langchain_postgres import PGVector
 from sqlalchemy import SQLColumnExpression, cast, create_engine, delete, func, select, Integer
 from sqlalchemy.dialects.postgresql import JSON, JSONB, JSONPATH, UUID, insert
 from langchain.globals import set_debug
+import datetime
 
 set_debug(True)
 
@@ -251,18 +252,41 @@ class RAG:
 
         return self.invoke_llm(system_prompt, user_prompt)
 
-    async def get_sources_list(self, chunks: List[Document]) -> List[str]:
+    async def get_sources_list(self, chunks: List[Document]) -> List[Dict[str, any]]:
+        # Fetch meeting data for the chunks
         meetings_dict = {m.id: m for m in await select_many_from_table(
             DB_Meeting,
             list(set([c.metadata["meeting_id"] for c in chunks]))
         )}
-        sources = [
-            {
-                "start_time": chunk.metadata["start_time"],
-                "end_time": chunk.metadata["end_time"],
-                "meeting": meetings_dict[chunk.metadata["meeting_id"]]
-            } for chunk in chunks
-        ]
+
+        # Helper function to convert float seconds to MM:SS or HH:MM:SS
+        def format_time(seconds: float) -> str:
+            total_seconds = int(seconds)
+            time_format = str(datetime.timedelta(seconds=total_seconds))
+            if total_seconds >= 3600:  # If it's over an hour
+                return time_format  # HH:MM:SS
+            else:
+                return time_format[-5:]  # MM:SS
+
+        # Dictionary to store meeting IDs and their corresponding start times
+        sources_dict = {}
+
+        for chunk in chunks:
+            meeting_id = chunk.metadata["meeting_id"]
+            start_time_seconds = float(chunk.metadata["start_time"])
+            formatted_time = format_time(start_time_seconds)
+
+            if meeting_id not in sources_dict:
+                sources_dict[meeting_id] = {
+                    "meeting": meetings_dict[meeting_id],
+                    "start_times": [formatted_time]
+                }
+            else:
+                sources_dict[meeting_id]["start_times"].append(formatted_time)
+
+        # Convert the dictionary back into a list of dictionaries
+        sources = [{"meeting": info["meeting"], "start_times": info["start_times"]} for info in sources_dict.values()]
+
         return sources
 
 
