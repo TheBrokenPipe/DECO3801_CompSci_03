@@ -23,7 +23,7 @@ from sqlalchemy import SQLColumnExpression, cast, create_engine, delete, func, s
 from sqlalchemy.dialects.postgresql import JSON, JSONB, JSONPATH, UUID, insert
 from langchain.globals import set_debug
 
-set_debug(True)
+# set_debug(True)
 
 
 class KeyPoints(BaseModel):
@@ -188,7 +188,6 @@ class RAG:
         return "\n\n".join(doc.page_content for doc in docs)
 
     async def query_retrieval(self, query_text: str, meetings: List[DB_Meeting]) -> tuple[str, list]:
-        set_debug(True)
 
         if len(meetings) > 0:
             meeting_ids = [meeting.id for meeting in meetings]
@@ -209,6 +208,9 @@ class RAG:
 
         docs = retriever.invoke(query_text)
         sources = await self.get_sources_list(docs)
+
+        return "TEXTTTTT", sources
+
 
         qa_chain = (
                 {"context": retriever | self.format_docs, "question": RunnablePassthrough()}

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 import random
 import streamlit as st
 from MIS.frontend.interface import Server
@@ -6,6 +6,7 @@ import asyncio, json
 
 
 if "transcript_view_id" not in st.session_state:
+    print("transcript_view_id not found in state")
     st.switch_page("pages/chat.py")
     # st.session_state["transcript_view_id"] = -1
 
@@ -61,9 +62,14 @@ if meeting.transcript:
             speaker = line['speaker']
             if speaker not in speaker_colors:
                 speaker_colors[speaker] = colorgen.__next__()
+            start_time = line['start_time']
+            hours, remainder = divmod(start_time, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            start_time = time(hour=int(hours), minute=int(minutes), second=int(seconds))
+            start_time = start_time.strftime("%H:%M:%S" if hours > 0 else "%M:%S")
             st.markdown(
                 f'''
-                :{speaker_colors[speaker]}[{speaker}]: {line['text']}
+                :{speaker_colors[speaker]}[{start_time}] - :{speaker_colors[speaker]}[{speaker}]: {line['text']}
                 '''
             )
 else:

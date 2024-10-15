@@ -1,6 +1,7 @@
 import time
 import streamlit as st
 import asyncio
+from datetime import datetime, time, timedelta
 
 from MIS.frontend.interface import Server
 
@@ -26,6 +27,14 @@ if len(chats) == 0:
 
 if "current_chat_id" not in st.session_state:
     st.session_state["current_chat_id"] = asyncio.run(Server.get_latest_chats()).id
+if "transcript_view_id" not in st.session_state:
+    st.session_state["transcript_view_id"] = asyncio.run(Server.get_latest_chats()).id
+    st.session_state["transcript_view_id_old"] = asyncio.run(Server.get_latest_chats()).id
+else:
+    if st.session_state["transcript_view_id"] != st.session_state["transcript_view_id_old"]:
+        st.session_state["transcript_view_id_old"] = st.session_state["transcript_view_id"]
+        st.switch_page("pages/transcript_view.py")
+
 
 print(st.session_state["current_chat_id"])
 
@@ -75,6 +84,13 @@ with st.sidebar:
         new_topic_button = st.button("Create Topic")
 
 
+def source_btn_click(index):
+    print("source_btn_click")
+    st.session_state["transcript_view_id"] = index
+
+
+source_buttons = []
+
 # React to user input
 if chat_input:
     chat_container.chat_message("User").markdown(chat_input)
@@ -84,7 +100,18 @@ if chat_input:
 
     asyncio.run(current_chat.add_message("Assistant", response))
     chat_container.chat_message("Assistant").markdown(response)
-    chat_container.chat_message("Assistant").markdown(f"Sources:\n"+ "\n".join([s["meeting"].name for s in sources]))
+    chat_container.chat_message("Assistant").markdown(f"Sources:\n" + "\n".join([s["meeting"].name for s in sources]))
+    columns = st.columns(min(5, len(sources)))  # button columns
+    print(columns[0])
+    for index, source in enumerate(sources):
+        with columns[index]:
+            hours, remainder = divmod(source["start_time"], 3600)
+            minutes, seconds = divmod(remainder, 60)
+            start_time = time(hour=int(hours), minute=int(minutes), second=int(seconds))
+            st.button(
+                source["meeting"].name + " " + start_time.strftime("%H:%M:%S" if hours > 0 else "%M:%S"),
+                on_click=source_btn_click, kwargs={"index": source["meeting"].id}, key=source["meeting"].name
+            )
 
 if new_chat_button:
     st.switch_page("pages/create_chat.py")
