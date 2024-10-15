@@ -44,7 +44,7 @@ screen_d = screenD.st_screen_data()
 
 current_chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
 st.title(current_chat.name)
-chat_container = st.container(border=True, height=int(screen_d["innerHeight"] * 0.62))
+chat_container = st.container(border=True, height=int(screen_d["innerHeight"] * 0.61))
 
 for message in current_chat.history:
     # print(message)
@@ -101,17 +101,18 @@ if chat_input:
     asyncio.run(current_chat.add_message("Assistant", response))
     chat_container.chat_message("Assistant").markdown(response)
     chat_container.chat_message("Assistant").markdown(f"Sources:\n" + "\n".join(list({source["meeting"].name for source in sources})))
-    columns = st.columns(min(5, len(sources)))  # button columns
-    for index, source in enumerate(sources):
-        with columns[index]:
-            # hours, remainder = divmod(source["start_time"], 3600)
-            # minutes, seconds = divmod(remainder, 60)
-            # start_time = time(hour=int(hours), minute=int(minutes), second=int(seconds))
-            # + start_time.strftime("%H:%M:%S" if hours > 0 else "%M:%S")
-            st.button(
-                source["meeting"].name + " " + (source["start_time"]),
-                on_click=source_btn_click, kwargs={"index": source["meeting"].id}, key=source["key"]
-            )
+    if len(sources)>0:
+        columns = st.columns(min(5, len(sources)))  # button columns
+        for index, source in enumerate(sources):
+            with columns[index]:
+                # hours, remainder = divmod(source["start_time"], 3600)
+                # minutes, seconds = divmod(remainder, 60)
+                # start_time = time(hour=int(hours), minute=int(minutes), second=int(seconds))
+                # + start_time.strftime("%H:%M:%S" if hours > 0 else "%M:%S")
+                st.button(
+                    source["meeting"].name + " " + (source["start_time"]),
+                    on_click=source_btn_click, kwargs={"index": source["meeting"].id}, key=source["key"]
+                )
 
 if new_chat_button:
     st.switch_page("pages/create_chat.py")
