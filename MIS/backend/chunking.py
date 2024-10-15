@@ -86,7 +86,7 @@ class Chunks:
             )
         )
 
-    def semantic_chunking(self, merged_lines: List[dict], filename: str, threshold=0.6) -> List[Document]:
+    def semantic_chunking(self, merged_lines: List[dict], filepath: str, threshold=0.6) -> List[Document]:
         original_threshold = threshold
 
         embeddings = self.get_batch_embedding(self.get_text(merged_lines))

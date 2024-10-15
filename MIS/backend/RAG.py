@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Dict
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import logging
@@ -14,7 +14,7 @@ from ..models import *
 from pydantic import BaseModel, ValidationError
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough, RunnableParallel
 from langchain.docstore.document import Document
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -22,6 +22,7 @@ from langchain_postgres import PGVector
 from sqlalchemy import SQLColumnExpression, cast, create_engine, delete, func, select, Integer
 from sqlalchemy.dialects.postgresql import JSON, JSONB, JSONPATH, UUID, insert
 from langchain.globals import set_debug
+import datetime
 
 # set_debug(True)
 
@@ -184,8 +185,13 @@ class RAG:
 
         self.vector_store.add_documents(chunks)
 
-    def format_docs(self, docs):
-        return "\n\n".join(doc.page_content for doc in docs)
+    def format_docs(self, input):
+        docs = input['docs']
+        output = {
+            "question": input['question'],
+            "context": "\n\n".join(doc.page_content for doc in docs)
+        }
+        return output
 
     async def query_retrieval(self, query_text: str, meetings: List[DB_Meeting]) -> tuple[str, list]:
 
@@ -206,21 +212,19 @@ class RAG:
         )
         prompt = ChatPromptTemplate.from_messages([("system", system_prompt,), ("human", "{question}")])
 
-        docs = retriever.invoke(query_text)
+        retrieval_chain = RunnableParallel(docs=retriever, question=RunnablePassthrough())
+
+        inference_chain = RunnableLambda(self.format_docs) | prompt | self.llm | StrOutputParser()
+
+        qa_chain = retrieval_chain | RunnableParallel(output=inference_chain, sources=RunnablePassthrough())
+
+        response = qa_chain.invoke(query_text)
+
+        llm_response = response["output"]
+
+        docs = response["sources"]["docs"]
+
         sources = await self.get_sources_list(docs)
-
-        return "TEXTTTTT", sources
-
-
-        qa_chain = (
-                {"context": retriever | self.format_docs, "question": RunnablePassthrough()}
-                | prompt
-                | self.llm
-                | StrOutputParser()
-        )
-
-        llm_response = qa_chain.invoke(query_text)
-        
         # response = llm_response + "\n\nSources:\n" + str(sources)
         # print(response)
 
@@ -253,18 +257,39 @@ class RAG:
 
         return self.invoke_llm(system_prompt, user_prompt)
 
-    async def get_sources_list(self, chunks: List[Document]) -> List[str]:
+    async def get_sources_list(self, chunks: List[Document]) -> List[Dict[str, any]]:
+        # Fetch meeting data for the chunks
         meetings_dict = {m.id: m for m in await select_many_from_table(
             DB_Meeting,
             list(set([c.metadata["meeting_id"] for c in chunks]))
         )}
-        sources = [
-            {
-                "start_time": chunk.metadata["start_time"],
-                "end_time": chunk.metadata["end_time"],
-                "meeting": meetings_dict[chunk.metadata["meeting_id"]]
-            } for chunk in chunks
-        ]
+
+        # Helper function to convert float seconds to MM:SS or HH:MM:SS
+        def format_time(seconds: int) -> str:
+            time_format = str(datetime.timedelta(seconds=seconds))
+            if seconds >= 3600:  # If it's over an hour
+                return time_format  # HH:MM:SS
+            else:
+                return time_format[-5:]  # MM:SS
+
+        # Dictionary to store meeting IDs and their corresponding start times
+        sources_dict = {}
+
+        for chunk in chunks:
+            meeting_id = chunk.metadata["meeting_id"]
+            formatted_time = format_time(int(chunk.metadata["start_time"]))
+
+            if meeting_id not in sources_dict:
+                sources_dict[meeting_id] = {
+                    "meeting": meetings_dict[meeting_id],
+                    "start_times": [formatted_time]
+                }
+            else:
+                sources_dict[meeting_id]["start_times"].append(formatted_time)
+
+        # Convert the dictionary back into a list of dictionaries
+        sources = [{"meeting": info["meeting"], "start_times": info["start_times"]} for info in sources_dict.values()]
+
         return sources
 
 
