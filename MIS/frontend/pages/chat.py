@@ -3,16 +3,10 @@ import streamlit as st
 import asyncio
 from datetime import datetime, time, timedelta
 
-from streamlit_js_eval import streamlit_js_eval
+from st_screen_stats import ScreenData
 from MIS.frontend.interface import Server
 
-st.session_state["summarise_chat"] = True
-st.session_state["viewport_width"] = streamlit_js_eval(
-     js_expressions="window.innerWidth", key="ViewportWidth")
-height = int(st.session_state["viewport_width"] * 3 / 5)
-
 print("Loading Chat")
-
 
 def btn_click(index):
     st.session_state["current_chat_id"] = index
@@ -45,10 +39,12 @@ print(st.session_state["current_chat_id"])
 
 
 # with col1:
+screenD = ScreenData(setTimeout=1500)
+screen_d = screenD.st_screen_data()
+
 current_chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
 st.title(current_chat.name)
-# chat_container = st.container(border=True)
-chat_container = st.container(border=True, height=height)
+chat_container = st.container(border=True, height=int(screen_d["innerHeight"] * 0.62))
 
 for message in current_chat.history:
     # print(message)
