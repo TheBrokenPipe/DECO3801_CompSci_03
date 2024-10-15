@@ -10,14 +10,15 @@ from annotated_text import annotated_text
 
 print("Loading Feed")
 if "current_chat_id" in st.session_state:
-    st.switch_page("pages/feed.py")
-if "transcript_view_id" not in st.session_state:
-    st.session_state["transcript_view_id"] = asyncio.run(Server.get_latest_chats()).id
-    st.session_state["transcript_view_id_old"] = asyncio.run(Server.get_latest_chats()).id
-else:
-    if st.session_state["transcript_view_id"] != st.session_state["transcript_view_id_old"]:
-        st.session_state["transcript_view_id_old"] = st.session_state["transcript_view_id"]
-        st.switch_page("pages/transcript_view.py")
+    st.switch_page("pages/chat.py")
+if "transcript_view_id" in st.session_state:
+    st.switch_page("pages/transcript_view.py")
+
+def transcript_btn_click(index):
+    st.session_state["transcript_view_id"] = index
+
+def chat_btn_click(index):
+    st.session_state["current_chat_id"] = index
 
 # # GET MEETINGS
 async def get_top_meetings() -> list[Meeting]:
@@ -42,9 +43,6 @@ if latest_meetings:
     transcript_buttons = []
     def format_topics(topics: list[Topic]) -> list:
         return [(topic.name, "topic", topic_colours[topic.name]) for topic in topics]
-
-    def transcript_btn_click(index):
-        st.session_state["transcript_view_id"] = index
 
     for meeting in latest_meetings:
         st.write("")
@@ -75,9 +73,6 @@ else:
 # # MAKE SIDE BAR
 chats = asyncio.run(Server.get_all_chats())
 
-def btn_click(index):
-    st.session_state["current_chat_id"] = index
-
 with st.sidebar:
     st.button("Home", icon=":material/home:", key="home")
 
@@ -87,7 +82,7 @@ with st.sidebar:
         if chats:
             st.divider()
             for chat in chats:
-                st.button(chat.name, on_click=btn_click, kwargs={"index": chat.id}, key="chat"+str(chat.id))
+                st.button(chat.name, on_click=chat_btn_click, kwargs={"index": chat.id}, key="chat" + str(chat.id))
 
     with st.expander("Actions", True):
         upload_button = st.button("Upload Meeting", key="upload")

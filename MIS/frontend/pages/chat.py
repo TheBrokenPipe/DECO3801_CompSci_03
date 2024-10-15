@@ -8,8 +8,6 @@ from MIS.frontend.interface import Server
 
 print("Loading Chat")
 
-def btn_click(index):
-    st.session_state["current_chat_id"] = index
 
 chats = asyncio.run(Server.get_all_chats())
 
@@ -19,21 +17,15 @@ chats = asyncio.run(Server.get_all_chats())
 
 if "current_chat_id" not in st.session_state:
     st.switch_page("pages/feed.py")
-if "transcript_view_id" not in st.session_state:
-    st.session_state["transcript_view_id"] = asyncio.run(Server.get_latest_chats()).id
-    st.session_state["transcript_view_id_old"] = asyncio.run(Server.get_latest_chats()).id
-else:
-    if st.session_state["transcript_view_id"] != st.session_state["transcript_view_id_old"]:
-        st.session_state["transcript_view_id_old"] = st.session_state["transcript_view_id"]
-        st.switch_page("pages/transcript_view.py")
-
+if "transcript_view_id" in st.session_state:
+    st.switch_page("pages/transcript_view.py")
 
 print(st.session_state["current_chat_id"])
 
-# col1, col2 = st.columns(2)  # button columns
+def btn_click(index):
+    st.session_state["current_chat_id"] = index
 
 
-# with col1:
 screenD = ScreenData(setTimeout=1500)
 screen_d = screenD.st_screen_data()
 
@@ -45,7 +37,6 @@ for message in current_chat.history:
     # print(message)
     chat_container.chat_message(message["username"]).markdown(message["message"])
 chat_input = st.chat_input("Ask a question about your meetings")
-
 
 latest_meetings = asyncio.run(Server.get_all_meetings())
 

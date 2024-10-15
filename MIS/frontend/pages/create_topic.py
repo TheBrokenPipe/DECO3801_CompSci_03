@@ -47,4 +47,7 @@ if want_create:
         )
     )
 
-    st.switch_page("pages/chat.py")
+    if "current_chat_id" not in st.session_state:
+        st.switch_page("pages/feed.py")
+    else:
+        st.switch_page("pages/chat.py")

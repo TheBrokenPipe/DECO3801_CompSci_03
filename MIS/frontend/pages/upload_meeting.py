@@ -54,7 +54,10 @@ if next1:
             topics=[t for t in existing_topics if t.name.lower() in selected_topics]
         )
     )
-    st.switch_page("pages/chat.py")
+    if "current_chat_id" not in st.session_state:
+        st.switch_page("pages/feed.py")
+    else:
+        st.switch_page("pages/chat.py")
 
     # TODO skipping the rest to make this work
     if uploaded_file:

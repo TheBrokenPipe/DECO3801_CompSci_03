@@ -40,11 +40,12 @@ want_create = st.button("Create")
 if want_create:
     selected_topics = [st.lower() for st in selected_topics]
 
-    asyncio.run(
+    new_chat = asyncio.run(
         Server.create_chat(
             meeting_name,
             [t for t in existing_topics if t.name.lower() in selected_topics]
         )
     )
 
+    st.session_state["current_chat_id"] = new_chat.id
     st.switch_page("pages/chat.py")

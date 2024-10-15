@@ -6,24 +6,17 @@ import random
 import asyncio
 from MIS.frontend.interface import Server
 
-if "current_chat_id" not in st.session_state:
-    st.session_state["current_chat_id"] = asyncio.run(Server.get_latest_chats()).id
-
 chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
-
-
-if "transcript_view_id" not in st.session_state:
-    st.session_state["transcript_view_id"] = -1
 
 # print("Summary State:", st.session_state["summarise_chat"])
 
 def transcript_click(index):
     st.session_state["transcript_view_id"] = index
 
-
 back_button = st.button("🔙", key="backButton")
 
 if back_button:
+    st.session_state["summarise_chat"] = True
     st.switch_page("pages/chat.py")
 
 topics = asyncio.run(chat.topics)
