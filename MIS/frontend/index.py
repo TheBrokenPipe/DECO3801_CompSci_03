@@ -7,8 +7,9 @@ if "summarise_chat" not in st.session_state:
 
 base_path = "pages/" 
 file_list = [
-    'chat.py',  # keep the default page first
-    'create_chat.py',  # keep the default page first
+    'feed.py', # keep the default page first
+    'chat.py',
+    'create_chat.py',
     'booting.py',
     'create_topic.py',
     'help.py',
