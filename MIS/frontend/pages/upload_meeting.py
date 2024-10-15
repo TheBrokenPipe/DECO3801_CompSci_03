@@ -72,7 +72,7 @@ if next1:
 #     upload_page1()
 
 if want_back:
-    if st.session_state["current_chat_id"] == -1:
+    if "current_chat_id" not in st.session_state:
         st.switch_page("pages/feed.py")
     else:
         st.switch_page("pages/chat.py")

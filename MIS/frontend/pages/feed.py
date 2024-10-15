@@ -9,8 +9,8 @@ from MIS.frontend.interface import Server, Meeting, Topic
 from annotated_text import annotated_text
 
 print("Loading Feed")
-if "current_chat_id" not in st.session_state:
-    st.session_state["current_chat_id"] = -1
+if "current_chat_id" in st.session_state:
+    st.switch_page("pages/feed.py")
 if "transcript_view_id" not in st.session_state:
     st.session_state["transcript_view_id"] = asyncio.run(Server.get_latest_chats()).id
     st.session_state["transcript_view_id_old"] = asyncio.run(Server.get_latest_chats()).id
@@ -78,9 +78,6 @@ chats = asyncio.run(Server.get_all_chats())
 def btn_click(index):
     st.session_state["current_chat_id"] = index
 
-if st.session_state["current_chat_id"] != -1:
-    st.switch_page("pages/chat.py")
-
 with st.sidebar:
     st.button("Home", icon=":material/home:", key="home")
 
@@ -99,11 +96,6 @@ with st.sidebar:
 # # SET BUTTONS
 if new_chat_button:
     st.switch_page("pages/create_chat.py")
-
-if summary_button:
-    st.session_state["summarise_chat"] = False
-    print("Chat State:", st.session_state["summarise_chat"])
-    st.switch_page("pages/summary.py")
 
 if upload_button:
     st.switch_page("pages/upload_meeting.py")
