@@ -1,5 +1,10 @@
 import streamlit as st
 
+back_button = st.button("Home", icon=":material/home:", key="home")
+
+if back_button:
+    st.switch_page("pages/home.py")
+
 col1, col2 = st.columns([3, 1], gap = "large", vertical_alignment="center")
 
 with col1:
@@ -7,7 +12,7 @@ with col1:
      
 
      with col1_a:
-          st.title("AppName")
+          st.title("Minutes in Seconds")
 
      with col1_b:
          st.subheader("| Help Center")

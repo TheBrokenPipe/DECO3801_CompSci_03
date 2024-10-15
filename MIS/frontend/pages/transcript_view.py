@@ -8,8 +8,6 @@ import asyncio, json
 if "transcript_view_id" not in st.session_state:
     print("transcript_view_id not found in state")
     st.switch_page("pages/chat.py")
-    # st.session_state["transcript_view_id"] = -1
-
 
 # return ordered array of the text paragraphs for the transcript
 def get_para_texts():
@@ -36,7 +34,7 @@ centreHeader.header("Transcript")
 header_help = rightHeader.button("Help", key="idjwn")
 
 if header_back:
-    if st.session_state["current_chat_id"] == -1:
+    if "current_chat_id" not in st.session_state:
         st.switch_page("pages/feed.py")
     else:
         st.switch_page("pages/chat.py")

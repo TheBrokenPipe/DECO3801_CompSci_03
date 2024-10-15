@@ -11,7 +11,6 @@ print("Loading Chat")
 def btn_click(index):
     st.session_state["current_chat_id"] = index
 
-
 chats = asyncio.run(Server.get_all_chats())
 
 # chat_names = []
@@ -110,7 +109,7 @@ if chat_input:
                 )
 
 if home_button:
-    st.session_state["current_chat_id"] = -1
+    del st.session_state["current_chat_id"]
     st.switch_page("pages/feed.py")
 
 if new_chat_button:
