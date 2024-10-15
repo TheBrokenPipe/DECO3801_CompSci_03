@@ -14,7 +14,7 @@ from ..models import *
 from pydantic import BaseModel, ValidationError
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough, RunnableParallel
 from langchain.docstore.document import Document
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -185,8 +185,13 @@ class RAG:
 
         self.vector_store.add_documents(chunks)
 
-    def format_docs(self, docs):
-        return "\n\n".join(doc.page_content for doc in docs)
+    def format_docs(self, input):
+        docs = input['docs']
+        output = {
+            "question": input['question'],
+            "context": "\n\n".join(doc.page_content for doc in docs)
+        }
+        return output
 
     async def query_retrieval(self, query_text: str, meetings: List[DB_Meeting]) -> tuple[str, list]:
         set_debug(True)
@@ -208,18 +213,19 @@ class RAG:
         )
         prompt = ChatPromptTemplate.from_messages([("system", system_prompt,), ("human", "{question}")])
 
-        docs = retriever.invoke(query_text)
+        retrieval_chain = RunnableParallel(docs=retriever, question=RunnablePassthrough())
+
+        inference_chain = RunnableLambda(self.format_docs) | prompt | self.llm | StrOutputParser()
+
+        qa_chain = retrieval_chain | RunnableParallel(output=inference_chain, sources=RunnablePassthrough())
+
+        response = qa_chain.invoke(query_text)
+
+        llm_response = response["output"]
+
+        docs = response["sources"]["docs"]
+
         sources = await self.get_sources_list(docs)
-
-        qa_chain = (
-                {"context": retriever | self.format_docs, "question": RunnablePassthrough()}
-                | prompt
-                | self.llm
-                | StrOutputParser()
-        )
-
-        llm_response = qa_chain.invoke(query_text)
-        
         # response = llm_response + "\n\nSources:\n" + str(sources)
         # print(response)
 
