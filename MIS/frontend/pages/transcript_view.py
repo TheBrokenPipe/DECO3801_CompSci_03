@@ -32,11 +32,14 @@ def get_meeting_date():
 
 leftHeader, centreHeader, rightHeader = st.columns(3)
 header_back = leftHeader.button("Back", key="fsdwe")
-centreHeader.header("Logo")
+centreHeader.header("Transcript")
 header_help = rightHeader.button("Help", key="idjwn")
 
 if header_back:
-    st.switch_page("pages/chat.py")
+    if st.session_state["current_chat_id"] == -1:
+        st.switch_page("pages/feed.py")
+    else:
+        st.switch_page("pages/chat.py")
 
 if header_help:
     st.switch_page("pages/help.py")

@@ -13,17 +13,13 @@ def btn_click(index):
 
 
 chats = asyncio.run(Server.get_all_chats())
-# print(chats[0].history)
-if len(chats) == 0:
-    asyncio.run(Server.create_chat("First Chat", []))
-    chats = asyncio.run(Server.get_all_chats())
 
 # chat_names = []
 # for chat in chats:
 #     chat_names.append(chat._chat.name)
 
 if "current_chat_id" not in st.session_state:
-    st.session_state["current_chat_id"] = asyncio.run(Server.get_latest_chats()).id
+    st.switch_page("pages/feed.py")
 if "transcript_view_id" not in st.session_state:
     st.session_state["transcript_view_id"] = asyncio.run(Server.get_latest_chats()).id
     st.session_state["transcript_view_id_old"] = asyncio.run(Server.get_latest_chats()).id
@@ -66,7 +62,7 @@ latest_meetings = asyncio.run(Server.get_all_meetings())
 
 
 with st.sidebar:
-    st.title("Chats")
+    home_button = st.button("Home", icon=":material/home:", key="home")
 
     with st.expander("Chats", True):
         new_chat_button = st.button("New Chat")
@@ -76,12 +72,11 @@ with st.sidebar:
             if chat.id == st.session_state["current_chat_id"]:
                 st.text(chat.name)
             else:
-                st.button(chat.name, on_click=btn_click, kwargs={"index": chat.id})
+                st.button(chat.name, on_click=btn_click, kwargs={"index": chat.id}, key="chat"+str(chat.id))
 
-    st.divider()
     with st.expander("Actions", True):
-        upload_button = st.button("Upload Meeting")
-        new_topic_button = st.button("Create Topic")
+        upload_button = st.button("Upload Meeting", key="upload")
+        new_topic_button = st.button("Create Topic", key="new_topic")
 
 
 def source_btn_click(index):
@@ -113,6 +108,10 @@ if chat_input:
                     source["meeting"].name + " " + (source["start_time"]),
                     on_click=source_btn_click, kwargs={"index": source["meeting"].id}, key=source["key"]
                 )
+
+if home_button:
+    st.session_state["current_chat_id"] = -1
+    st.switch_page("pages/feed.py")
 
 if new_chat_button:
     st.switch_page("pages/create_chat.py")

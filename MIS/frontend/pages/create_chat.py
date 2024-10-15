@@ -6,7 +6,10 @@ import asyncio
 col1, col2 = st.columns([6, 1], gap="large", vertical_alignment="center")
 with col1:
     if st.button('← Back'):
-        st.switch_page("pages/chat.py")
+        if st.session_state["current_chat_id"] == -1:
+            st.switch_page("pages/feed.py")
+        else:
+            st.switch_page("pages/chat.py")
 
 with col2:
     if st.button('Help'):
