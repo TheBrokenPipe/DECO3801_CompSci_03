@@ -24,7 +24,7 @@ from sqlalchemy.dialects.postgresql import JSON, JSONB, JSONPATH, UUID, insert
 from langchain.globals import set_debug
 import datetime
 
-set_debug(True)
+# set_debug(True)
 
 
 class KeyPoints(BaseModel):
@@ -194,7 +194,6 @@ class RAG:
         return output
 
     async def query_retrieval(self, query_text: str, meetings: List[DB_Meeting]) -> tuple[str, list]:
-        set_debug(True)
 
         if len(meetings) > 0:
             meeting_ids = [meeting.id for meeting in meetings]
