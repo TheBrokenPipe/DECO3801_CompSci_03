@@ -12,4 +12,8 @@ requests
 python-dotenv
 docker
 psycopg[binary]
+st-annotated-text
+streamlit-screen-stats
+streamlit-browser-session-storage
+streamlit-local-storage
 git+https://github.com/Hasan-Naseer/whisperX.git@caa7121
