@@ -260,10 +260,9 @@ class RAG:
         )}
 
         # Helper function to convert float seconds to MM:SS or HH:MM:SS
-        def format_time(seconds: float) -> str:
-            total_seconds = int(seconds)
-            time_format = str(datetime.timedelta(seconds=total_seconds))
-            if total_seconds >= 3600:  # If it's over an hour
+        def format_time(seconds: int) -> str:
+            time_format = str(datetime.timedelta(seconds=seconds))
+            if seconds >= 3600:  # If it's over an hour
                 return time_format  # HH:MM:SS
             else:
                 return time_format[-5:]  # MM:SS
@@ -273,8 +272,7 @@ class RAG:
 
         for chunk in chunks:
             meeting_id = chunk.metadata["meeting_id"]
-            start_time_seconds = float(chunk.metadata["start_time"])
-            formatted_time = format_time(start_time_seconds)
+            formatted_time = format_time(int(chunk.metadata["start_time"]))
 
             if meeting_id not in sources_dict:
                 sources_dict[meeting_id] = {
