@@ -257,7 +257,7 @@ class RAG:
 
         return self.invoke_llm(system_prompt, user_prompt)
 
-    async def get_sources_list(self, chunks: List[Document]) -> List[Dict[str, any]]:
+    async def get_sources_list(self, chunks: List[Document]) -> list[dict[str, Any]]:
         # Fetch meeting data for the chunks
         meetings_dict = {m.id: m for m in await select_many_from_table(
             DB_Meeting,
@@ -272,23 +272,14 @@ class RAG:
             else:
                 return time_format[-5:]  # MM:SS
 
-        # Dictionary to store meeting IDs and their corresponding start times
-        sources_dict = {}
-
-        for chunk in chunks:
-            meeting_id = chunk.metadata["meeting_id"]
-            formatted_time = format_time(int(chunk.metadata["start_time"]))
-
-            if meeting_id not in sources_dict:
-                sources_dict[meeting_id] = {
-                    "meeting": meetings_dict[meeting_id],
-                    "start_times": [formatted_time]
-                }
-            else:
-                sources_dict[meeting_id]["start_times"].append(formatted_time)
-
-        # Convert the dictionary back into a list of dictionaries
-        sources = [{"meeting": info["meeting"], "start_times": info["start_times"]} for info in sources_dict.values()]
+        sources = [
+            {
+                "start_time": format_time(int(chunk.metadata["start_time"])),
+                "end_time": format_time(int(chunk.metadata["end_time"])),
+                "meeting": meetings_dict[chunk.metadata["meeting_id"]],
+                "key": str(chunk.metadata["meeting_id"])+str(int(chunk.metadata["start_time"]))
+            } for chunk in chunks
+        ]
 
         return sources
 

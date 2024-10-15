@@ -3,6 +3,7 @@ import streamlit as st
 import asyncio
 from datetime import datetime, time, timedelta
 
+from st_screen_stats import ScreenData, StreamlitNativeWidgetScreen, WindowQuerySize, WindowQueryHelper
 from MIS.frontend.interface import Server
 
 st.session_state["summarise_chat"] = True
@@ -100,7 +101,7 @@ if chat_input:
 
     asyncio.run(current_chat.add_message("Assistant", response))
     chat_container.chat_message("Assistant").markdown(response)
-    chat_container.chat_message("Assistant").markdown(f"Sources:\n" + "\n".join([s["meeting"].name for s in sources]))
+    chat_container.chat_message("Assistant").markdown(f"Sources:\n" + "\n".join(list({source["meeting"].name for source in sources})))
     columns = st.columns(min(5, len(sources)))  # button columns
     for index, source in enumerate(sources):
         with columns[index]:
@@ -109,8 +110,8 @@ if chat_input:
             # start_time = time(hour=int(hours), minute=int(minutes), second=int(seconds))
             # + start_time.strftime("%H:%M:%S" if hours > 0 else "%M:%S")
             st.button(
-                source["meeting"].name + " " + " ".join(source["start_times"]),
-                on_click=source_btn_click, kwargs={"index": source["meeting"].id}, key=source["meeting"].name
+                source["meeting"].name + " " + (source["start_time"]),
+                on_click=source_btn_click, kwargs={"index": source["meeting"].id}, key=source["key"]
             )
 
 if new_chat_button:
