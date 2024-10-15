@@ -15,7 +15,7 @@ chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
 if "transcript_view_id" not in st.session_state:
     st.session_state["transcript_view_id"] = -1
 
-print("Summary State:", st.session_state["summarise_chat"])
+# print("Summary State:", st.session_state["summarise_chat"])
 
 def transcript_click(index):
     st.session_state["transcript_view_id"] = index
@@ -40,10 +40,11 @@ col1, col2 = st.columns(2)
 
 with col1:
     with st.expander("Summary", expanded=True):
-        print(f"Session State: {st.session_state['summarise_chat']}")
-        if not st.session_state["summarise_chat"]:
-            st.write(chat.summary)
-            st.session_state["summarise_chat"] = True
+        # print(f"Session State: {st.session_state['summarise_chat']}")
+        # if not st.session_state["summarise_chat"]:
+        #     st.write(chat.summary)
+        #     st.session_state["summarise_chat"] = True
+        st.write(chat.summary)
 
     with st.expander("Action Items", expanded=True):
         for actionItem in asyncio.run(chat.action_items):

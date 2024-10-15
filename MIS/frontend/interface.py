@@ -232,6 +232,9 @@ class Meeting:
 
 
 class Chat:
+    def __hash__(self) -> int:
+        return self._chat.id
+
     def __init__(self, chat: DB_Chat) -> None:
         self._chat = chat
 
@@ -274,7 +277,7 @@ class Chat:
         ]
 
     @property
-    # @st.cache_data
+    @st.cache_data(hash_funcs={"MIS.frontend.interface.Chat": __hash__})
     def summary(self) -> str:
         print("summarising")
         return rag.summarise_chat([m.summary for m in asyncio.run(self.meetings)])
