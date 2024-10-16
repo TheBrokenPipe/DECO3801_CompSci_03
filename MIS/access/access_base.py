@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class AccessBase:
 
     connection_string = (
@@ -46,7 +47,8 @@ class AccessBase:
 
     @staticmethod
     @db_access
-    async def db_fetchone(sql, values=None, function=lambda f: f, cursor: AsyncCursor = None):
+    async def db_fetchone(sql, values=None, function=lambda f: f,
+                          cursor: AsyncCursor = None):
         assert cursor is not None
         await cursor.execute(SQL(sql), values)
         ret = await cursor.fetchone()
@@ -54,7 +56,8 @@ class AccessBase:
 
     @staticmethod
     @db_access
-    async def db_fetchall(sql, values=None, function=lambda f: f, cursor: AsyncCursor = None) -> list:
+    async def db_fetchall(sql, values=None, function=lambda f: f,
+                          cursor: AsyncCursor = None) -> list:
         assert cursor is not None
         await cursor.execute(SQL(sql), values)
         ret = await cursor.fetchall()

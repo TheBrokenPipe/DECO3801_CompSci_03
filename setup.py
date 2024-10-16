@@ -20,6 +20,7 @@ if sys.platform == "win32":
 
 
 def download(url: str, filename: str, desc: str):
+    """Download a URL to file, displaying a progress bar with description."""
     with open(filename, 'wb') as file:
         with requests.get(url, stream=True) as request:
             request.raise_for_status()
@@ -41,6 +42,7 @@ def download(url: str, filename: str, desc: str):
 
 
 def download_meetings(base_path: str):
+    """Download ten sample meetings from the AMI Corpus."""
     baseurl = "https://groups.inf.ed.ac.uk/ami/AMICorpusMirror/amicorpus/"
 
     meetings = ["ES2002a", "ES2002b", "ES2002c", "ES2002d", "EN2002a",
@@ -55,6 +57,7 @@ def download_meetings(base_path: str):
 
 
 async def create_meetings(base_path: str):
+    """Create meeting and tag records in the database."""
     tqdm_params = {
         'desc': "Creating meetings",
         'total': 4,
@@ -96,6 +99,7 @@ async def create_meetings(base_path: str):
 
 
 def setup_meetings(base_path: str) -> bool:
+    """Walk through meeting download and creation."""
     dl_meetings_prompt = "Download ten sample meetings? (Y, N, default Y): "
     dl_meetings = input(dl_meetings_prompt).strip().upper() or "Y"
     if dl_meetings == "Y":
@@ -124,6 +128,7 @@ def setup_meetings(base_path: str) -> bool:
 
 
 def setup_env() -> bool:
+    """Walk through .env file setup if one does not already exist."""
     env = Path(".env")
     if env.is_file():
         print("A .env file already exists, skipping .env file setup")
@@ -195,6 +200,7 @@ def setup_env() -> bool:
 
 
 def setup_ollama() -> bool:
+    """Walk though downloading embedding model using ollama."""
     ollama_prompt = "Pull nomic-embed-text from ollama? (Y, N, default Y): "
     ollama = input(ollama_prompt).strip().upper() or "Y"
     if ollama == "Y":
@@ -210,11 +216,12 @@ def setup_ollama() -> bool:
 
 
 def main():
+    """Main initial setup process for Minutes In Seconds."""
     logging.basicConfig()
     logging.getLogger().setLevel(logging.WARNING)
 
     print("==========================")
-    print("Minutes in Seconds - Setup")
+    print("Minutes In Seconds - Setup")
     print("==========================")
 
     if not setup_env():

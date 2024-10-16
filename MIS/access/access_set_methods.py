@@ -53,7 +53,8 @@ async def insert_into_table(
             lambda f: first_obj.__class__(**f)
         )
 
-        # Return a list if multiple objects were provided; otherwise, return a single object
+        # Return a list if multiple objects were provided;
+        # otherwise, return a single object
         if always_return_list:
             return results
         else:
