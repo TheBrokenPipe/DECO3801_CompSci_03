@@ -1,9 +1,10 @@
 import os
 from typing import Any, List, Tuple, Dict
-
+import json
 import logging
 import sqlalchemy
 import asyncio
+from time import monotonic
 
 from ..access import *
 from ..models import *
@@ -137,7 +138,10 @@ class RAG:
             "readable summary that could help a person understand the main "
             "points of the discussion without needing to read the entire "
             "text. Please avoid unnecessary details or tangential points.")
+        time = monotonic()
         summary = self.invoke_llm(system_prompt, transcript)
+        duration = monotonic() - time
+        self.logger.debug(f"Summarised transcription in {duration}s")
         if isinstance(self.llm, ChatOllama) and summary[:4] == "Here":
             summary = summary[summary.find("\n\n"):].strip()
         return summary
@@ -160,11 +164,19 @@ class RAG:
 
     def key_points_extraction(self, transcription):
         transcript = self.jsonl_to_txt(transcription)
-        return self.extract_specific_objects(transcript, KeyPoints)
+        time = monotonic()
+        key_points = self.extract_specific_objects(transcript, KeyPoints)
+        duration = monotonic() - time
+        self.logger.debug(f"Extracted key points in {duration}s")
+        return key_points
 
     def action_item_extraction(self, transcription):
         transcript = self.jsonl_to_txt(transcription)
-        return self.extract_specific_objects(transcript, ActionItems)
+        time = monotonic()
+        action_items = self.extract_specific_objects(transcript, ActionItems)
+        duration = monotonic() - time
+        self.logger.debug(f"Extracted key points in {duration}s")
+        return action_items
 
     def summarise_meeting(self, transcript) -> Dict:
         return {

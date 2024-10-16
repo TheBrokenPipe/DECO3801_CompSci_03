@@ -36,6 +36,7 @@ class Ingestion:
             return
 
         meeting = meetings[0]
+        self.logger.debug(f"Starting summarisation of {meeting.name}")
         with open(meeting.file_transcript, 'r', encoding="utf-8") as file:
             transcript = file.read()
 
