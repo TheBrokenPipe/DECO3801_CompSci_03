@@ -43,7 +43,8 @@ if want_create:
     asyncio.run(
         Server.create_topic(
             meeting_name,
-            [m for m in existing_meetings if m.name.lower() in selected_meetings]
+            [m for m in existing_meetings
+             if m.name.lower() in selected_meetings]
         )
     )
 

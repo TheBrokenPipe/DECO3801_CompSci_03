@@ -1,13 +1,14 @@
 from datetime import datetime, time
-import random
 import streamlit as st
 from MIS.frontend.interface import Server
-import asyncio, json
+import asyncio
+import json
 
 
 if "transcript_view_id" not in st.session_state:
     print("transcript failed to show")
     st.switch_page("pages/feed.py")
+
 
 # return ordered array of the text paragraphs for the transcript
 def get_para_texts():
@@ -27,6 +28,7 @@ def get_meeting_name():
 def get_meeting_date():
     return datetime(2024, 1, 1)
 
+
 st.markdown(
     """
     <style>
@@ -39,10 +41,13 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-leftHeader, centreHeader, rightHeader = st.columns([1,5,1], vertical_alignment="center")
+leftHeader, centreHeader, rightHeader = st.columns([1, 5, 1],
+                                                   vertical_alignment="center")
+
 header_back = leftHeader.button("Back", key="fsdwe")
 with centreHeader:
-    st.markdown('<h2 class="centered-header">Transcript</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="centered-header">Transcript</h2>',
+                unsafe_allow_html=True)
 header_help = rightHeader.button("Help", key="idjwn")
 
 if header_back:
@@ -57,7 +62,10 @@ if header_back:
 if header_help:
     st.switch_page("pages/help.py")
 
-meeting = asyncio.run(Server.get_meeting_by_id(st.session_state["transcript_view_id"]))
+meeting = asyncio.run(
+    Server.get_meeting_by_id(st.session_state["transcript_view_id"])
+)
+
 
 def colors():
     colors = ["red", "blue", "green", "violet", "orange"]
@@ -67,6 +75,7 @@ def colors():
         c_i += 1
         if c_i == len(colors):
             c_i = 0
+
 
 speaker_colors = {}
 colorgen = colors()
@@ -81,17 +90,21 @@ if meeting.transcript:
             start_time = line['start_time']
             hours, remainder = divmod(start_time, 3600)
             minutes, seconds = divmod(remainder, 60)
-            start_time = time(hour=int(hours), minute=int(minutes), second=int(seconds))
-            start_time = start_time.strftime("%H:%M:%S" if hours > 0 else "%M:%S")
+            start_time = time(hour=int(hours), minute=int(minutes),
+                              second=int(seconds))
+
+            start_time = start_time.strftime("%H:%M:%S" if hours > 0
+                                             else "%M:%S")
+
+            timestamp = {speaker_colors[speaker]}[{start_time}]
+            text = line['text']
             st.markdown(
                 f'''
-                :{speaker_colors[speaker]}[{start_time}] - :{speaker_colors[speaker]}[{speaker}]: {line['text']}
+                :{timestamp} - :{speaker_colors[speaker]}[{speaker}]: {text}
                 '''
             )
 else:
     st.text(f"No filepath for this meeting: {meeting.name}")
-
-
 
 # date_string = datetime.strftime(get_meeting_date(), "%d/%m/%Y")
 # st.header(f"{get_meeting_name()} ({date_string})")

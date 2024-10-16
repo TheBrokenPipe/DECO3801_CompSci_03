@@ -2,7 +2,6 @@
 # other imports
 import streamlit as st
 from datetime import datetime
-import random
 import asyncio
 from MIS.frontend.interface import Server
 
@@ -10,8 +9,10 @@ chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
 
 # print("Summary State:", st.session_state["summarise_chat"])
 
+
 def transcript_click(index):
     st.session_state["transcript_view_id"] = index
+
 
 back_button = st.button("🔙", key="backButton")
 
@@ -27,7 +28,8 @@ headertxt = " and ".join([t.name for t in topics]) + " Summary"
 st.header(headertxt)
 
 # topicModified = map(lambda topic: topic.get_modified_time(), topics)
-# st.text(f"Last modified: " + datetime.strftime(max(topicModified), "%Y-%m-%d"))
+# st.text(f"Last modified: " +
+#         datetime.strftime(max(topicModified), "%Y-%m-%d"))
 
 col1, col2 = st.columns(2)
 
