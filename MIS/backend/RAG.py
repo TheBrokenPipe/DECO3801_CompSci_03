@@ -195,7 +195,7 @@ class RAG:
 
     async def query_retrieval(self, query_text: str, meeting_ids: List[int]) -> tuple[str, list]:
 
-        if len(meetings) > 0:
+        if len(meeting_ids) > 0:
             retriever = self.vector_store.as_retriever(search_type="similarity_score_threshold",
                                                        search_kwargs={'k': 3, 'score_threshold': 0.5,
                                                                       'filter': {"meeting_id": {"$in": meeting_ids}}})
