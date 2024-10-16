@@ -16,6 +16,7 @@ if sys.platform == "win32":
 
 
 async def main():
+    """Runs the backend, infinitely looping over and processing meetings."""
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose",
                         help="increase output verbosity",

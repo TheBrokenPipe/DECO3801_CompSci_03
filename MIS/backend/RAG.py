@@ -1,14 +1,11 @@
 import os
-import sys
 from typing import Any, List, Tuple, Dict
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import logging
 import sqlalchemy
 import asyncio
 
-from models import DB_Meeting
-from access import *
+from ..access import *
 from ..models import *
 
 from pydantic import BaseModel, ValidationError
@@ -24,21 +21,19 @@ from sqlalchemy.dialects.postgresql import JSON, JSONB, JSONPATH, UUID, insert
 from langchain.globals import set_debug
 import datetime
 
-# set_debug(True)
-
 
 class KeyPoints(BaseModel):
     """
     key_points: list of key points mentioned in text
     """
-    key_points: list[str]
+    key_points: List[str]
 
 
 class ActionItems(BaseModel):
     """
     action_items: list of action items mentioned in text
     """
-    action_items: list[str]
+    action_items: List[str]
 
 
 class RAG:
@@ -51,7 +46,8 @@ class RAG:
 
             if os.getenv("EMBED_PROVIDER", "openai") == "openai":
                 embed_model = "text-embedding-3-large"
-                self.embeddings = OpenAIEmbeddings(model=embed_model, dimensions=500)
+                self.embeddings = OpenAIEmbeddings(model=embed_model,
+                                                   dimensions=500)
             else:
                 embed_model = "nomic-embed-text"
                 self.embeddings = OllamaEmbeddings(model=embed_model)
@@ -146,7 +142,7 @@ class RAG:
             summary = summary[summary.find("\n\n"):].strip()
         return summary
 
-    def summarise_chat(self, meeting_summaries: list[str]):
+    def summarise_chat(self, meeting_summaries: List[str]):
         system_prompt = (
             "You are a highly skilled AI trained in language comprehension "
             "and summarization. I would like you to read the following "
@@ -170,14 +166,14 @@ class RAG:
         transcript = self.jsonl_to_txt(transcription)
         return self.extract_specific_objects(transcript, ActionItems)
 
-    def summarise_meeting(self, transcript) -> dict:
+    def summarise_meeting(self, transcript) -> Dict:
         return {
             'abstract_summary': self.abstract_summary_extraction(transcript),
             'key_points': self.key_points_extraction(transcript),
             'action_items': self.action_item_extraction(transcript),
         }
 
-    def embed_meeting(self, meeting, chunks: list[Document]):
+    def embed_meeting(self, meeting, chunks: List[Document]):
         for chunk in chunks:
             if isinstance(self.embeddings, OllamaEmbeddings):
                 chunk.page_content = "search_document: " + chunk.page_content
@@ -256,7 +252,7 @@ class RAG:
 
         return self.invoke_llm(system_prompt, user_prompt)
 
-    async def get_sources_list(self, chunks: List[Document]) -> List[Dict[str, any]]:
+    async def get_sources_list(self, chunks: List[Document]) -> List[Dict[str, Any]]:
         # Fetch meeting data for the chunks
         meetings_dict = {m.id: m for m in await select_many_from_table(
             DB_Meeting,
@@ -271,23 +267,14 @@ class RAG:
             else:
                 return time_format[-5:]  # MM:SS
 
-        # Dictionary to store meeting IDs and their corresponding start times
-        sources_dict = {}
-
-        for chunk in chunks:
-            meeting_id = chunk.metadata["meeting_id"]
-            formatted_time = format_time(int(chunk.metadata["start_time"]))
-
-            if meeting_id not in sources_dict:
-                sources_dict[meeting_id] = {
-                    "meeting": meetings_dict[meeting_id],
-                    "start_times": [formatted_time]
-                }
-            else:
-                sources_dict[meeting_id]["start_times"].append(formatted_time)
-
-        # Convert the dictionary back into a list of dictionaries
-        sources = [{"meeting": info["meeting"], "start_times": info["start_times"]} for info in sources_dict.values()]
+        sources = [
+            {
+                "start_time": format_time(int(chunk.metadata["start_time"])),
+                "end_time": format_time(int(chunk.metadata["end_time"])),
+                "meeting": meetings_dict[chunk.metadata["meeting_id"]],
+                "key": str(chunk.metadata["meeting_id"])+str(int(chunk.metadata["start_time"]))
+            } for chunk in chunks
+        ]
 
         return sources
 

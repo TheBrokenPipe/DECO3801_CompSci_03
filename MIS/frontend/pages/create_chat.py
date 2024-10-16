@@ -6,7 +6,10 @@ import asyncio
 col1, col2 = st.columns([6, 1], gap="large", vertical_alignment="center")
 with col1:
     if st.button('← Back'):
-        st.switch_page("pages/chat.py")
+        if "current_chat_id" not in st.session_state:
+            st.switch_page("pages/feed.py")
+        else:
+            st.switch_page("pages/chat.py")
 
 with col2:
     if st.button('Help'):
@@ -37,11 +40,12 @@ want_create = st.button("Create")
 if want_create:
     selected_topics = [st.lower() for st in selected_topics]
 
-    asyncio.run(
+    new_chat = asyncio.run(
         Server.create_chat(
             meeting_name,
             [t for t in existing_topics if t.name.lower() in selected_topics]
         )
     )
 
+    st.session_state["current_chat_id"] = new_chat.id
     st.switch_page("pages/chat.py")

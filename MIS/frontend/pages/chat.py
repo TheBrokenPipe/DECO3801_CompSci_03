@@ -3,54 +3,40 @@ import streamlit as st
 import asyncio
 from datetime import datetime, time, timedelta
 
+from st_screen_stats import ScreenData
 from MIS.frontend.interface import Server
-
-st.session_state["summarise_chat"] = True
-
 
 print("Loading Chat")
 
 
-def btn_click(index):
-    st.session_state["current_chat_id"] = index
-
-
 chats = asyncio.run(Server.get_all_chats())
-# print(chats[0].history)
-if len(chats) == 0:
-    asyncio.run(Server.create_chat("First Chat", []))
-    chats = asyncio.run(Server.get_all_chats())
 
 # chat_names = []
 # for chat in chats:
 #     chat_names.append(chat._chat.name)
 
 if "current_chat_id" not in st.session_state:
-    st.session_state["current_chat_id"] = asyncio.run(Server.get_latest_chats()).id
-if "transcript_view_id" not in st.session_state:
-    st.session_state["transcript_view_id"] = asyncio.run(Server.get_latest_chats()).id
-    st.session_state["transcript_view_id_old"] = asyncio.run(Server.get_latest_chats()).id
-else:
-    if st.session_state["transcript_view_id"] != st.session_state["transcript_view_id_old"]:
-        st.session_state["transcript_view_id_old"] = st.session_state["transcript_view_id"]
-        st.switch_page("pages/transcript_view.py")
-
+    st.switch_page("pages/feed.py")
+if "transcript_view_id" in st.session_state:
+    st.switch_page("pages/transcript_view.py")
 
 print(st.session_state["current_chat_id"])
 
-# col1, col2 = st.columns(2)  # button columns
+def btn_click(index):
+    st.session_state["current_chat_id"] = index
 
 
-# with col1:
+screenD = ScreenData(setTimeout=1500)
+screen_d = screenD.st_screen_data()
+
 current_chat = asyncio.run(Server.get_chat_by_id(st.session_state["current_chat_id"]))
 st.title(current_chat.name)
-chat_container = st.container(border=True)
+chat_container = st.container(border=True, height=int(screen_d["innerHeight"] * 0.61))
 
 for message in current_chat.history:
     # print(message)
     chat_container.chat_message(message["username"]).markdown(message["message"])
 chat_input = st.chat_input("Ask a question about your meetings")
-
 
 latest_meetings = asyncio.run(Server.get_all_meetings())
 
@@ -66,7 +52,7 @@ latest_meetings = asyncio.run(Server.get_all_meetings())
 
 
 with st.sidebar:
-    st.title("Chats")
+    home_button = st.button("Home", icon=":material/home:", key="home")
 
     with st.expander("Chats", True):
         new_chat_button = st.button("New Chat")
@@ -76,12 +62,11 @@ with st.sidebar:
             if chat.id == st.session_state["current_chat_id"]:
                 st.text(chat.name)
             else:
-                st.button(chat.name, on_click=btn_click, kwargs={"index": chat.id})
+                st.button(chat.name, on_click=btn_click, kwargs={"index": chat.id}, key="chat"+str(chat.id))
 
-    st.divider()
     with st.expander("Actions", True):
-        upload_button = st.button("Upload Meeting")
-        new_topic_button = st.button("Create Topic")
+        upload_button = st.button("Upload Meeting", key="upload")
+        new_topic_button = st.button("Create Topic", key="new_topic")
 
 
 def source_btn_click(index):
@@ -100,18 +85,23 @@ if chat_input:
 
     asyncio.run(current_chat.add_message("Assistant", response))
     chat_container.chat_message("Assistant").markdown(response)
-    chat_container.chat_message("Assistant").markdown(f"Sources:\n" + "\n".join([s["meeting"].name for s in sources]))
-    columns = st.columns(min(5, len(sources)))  # button columns
-    for index, source in enumerate(sources):
-        with columns[index]:
-            # hours, remainder = divmod(source["start_time"], 3600)
-            # minutes, seconds = divmod(remainder, 60)
-            # start_time = time(hour=int(hours), minute=int(minutes), second=int(seconds))
-            # + start_time.strftime("%H:%M:%S" if hours > 0 else "%M:%S")
-            st.button(
-                source["meeting"].name + " " + " ".join(source["start_times"]),
-                on_click=source_btn_click, kwargs={"index": source["meeting"].id}, key=source["meeting"].name
-            )
+    chat_container.chat_message("Assistant").markdown(f"Sources:\n" + "\n".join(list({source["meeting"].name for source in sources})))
+    if len(sources)>0:
+        columns = st.columns(min(5, len(sources)))  # button columns
+        for index, source in enumerate(sources):
+            with columns[index]:
+                # hours, remainder = divmod(source["start_time"], 3600)
+                # minutes, seconds = divmod(remainder, 60)
+                # start_time = time(hour=int(hours), minute=int(minutes), second=int(seconds))
+                # + start_time.strftime("%H:%M:%S" if hours > 0 else "%M:%S")
+                st.button(
+                    source["meeting"].name + " " + (source["start_time"]),
+                    on_click=source_btn_click, kwargs={"index": source["meeting"].id}, key=source["key"]
+                )
+
+if home_button:
+    del st.session_state["current_chat_id"]
+    st.switch_page("pages/feed.py")
 
 if new_chat_button:
     st.switch_page("pages/create_chat.py")

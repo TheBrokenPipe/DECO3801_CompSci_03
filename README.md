@@ -1,4 +1,4 @@
-# Minutes in Seconds (MIS)
+# Minutes In Seconds (MIS)
 A web application where users can upload meetings and meeting-like events, which are transcribed and summarised. Then, users can query within or across the context of all the meetings.
 
 **Please note that a full installation from scratch will need 5 to 20+ GB of free disk space depending on model specifics and GPU acceleration.**

@@ -19,7 +19,8 @@ class Chunks:
         self.logger = logging.getLogger(__name__)
         provider = os.getenv("CHUNKING_EMBED_PROVIDER", "ollama")
         if "OPENAI_API_KEY" in os.environ and provider == "openai":
-            self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=500)
+            self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large",
+                                               dimensions=500)
         else:
             self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
@@ -86,7 +87,8 @@ class Chunks:
             )
         )
 
-    def semantic_chunking(self, merged_lines: List[dict], filepath: str, threshold=0.6) -> List[Document]:
+    def semantic_chunking(self, merged_lines: List[dict],
+                          filepath: str, threshold=0.6) -> List[Document]:
         original_threshold = threshold
 
         embeddings = self.get_batch_embedding(self.get_text(merged_lines))
@@ -100,7 +102,8 @@ class Chunks:
 
             # Check if there is a next line to compare
             if i + 1 < len(merged_lines):
-                threshold = 1 - self.thresh_multiplier(len(current_chunk), 10) * (1 - original_threshold)
+                multiplier = self.thresh_multiplier(len(current_chunk), 10)
+                threshold = 1 - multiplier * (1 - original_threshold)
                 print(threshold)
                 # Calculate similarity between current chunk and next line
                 combined_text = " ".join(self.get_text(current_chunk))

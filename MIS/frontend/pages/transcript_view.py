@@ -6,10 +6,8 @@ import asyncio, json
 
 
 if "transcript_view_id" not in st.session_state:
-    print("transcript_view_id not found in state")
-    st.switch_page("pages/chat.py")
-    # st.session_state["transcript_view_id"] = -1
-
+    print("transcript failed to show")
+    st.switch_page("pages/feed.py")
 
 # return ordered array of the text paragraphs for the transcript
 def get_para_texts():
@@ -29,14 +27,32 @@ def get_meeting_name():
 def get_meeting_date():
     return datetime(2024, 1, 1)
 
+st.markdown(
+    """
+    <style>
+    .centered-header {
+        text-align: center;
+        margin: 0 auto;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-leftHeader, centreHeader, rightHeader = st.columns(3)
+leftHeader, centreHeader, rightHeader = st.columns([1,5,1], vertical_alignment="center")
 header_back = leftHeader.button("Back", key="fsdwe")
-centreHeader.header("Logo")
+with centreHeader:
+    st.markdown('<h2 class="centered-header">Transcript</h2>', unsafe_allow_html=True)
 header_help = rightHeader.button("Help", key="idjwn")
 
 if header_back:
-    st.switch_page("pages/chat.py")
+    del st.session_state["transcript_view_id"]
+    if not st.session_state["summarise_chat"]:
+        st.switch_page("pages/summary.py")
+    elif "current_chat_id" in st.session_state:
+        st.switch_page("pages/chat.py")
+    else:
+        st.switch_page("pages/feed.py")
 
 if header_help:
     st.switch_page("pages/help.py")

@@ -1,5 +1,15 @@
 import streamlit as st
 
+home_button = st.button("Home", icon=":material/home:", key="home")
+
+if home_button:
+    st.session_state["summarise_chat"] = True
+    if "transcript_view_id" in st.session_state:
+        del st.session_state["transcript_view_id"]
+    if "current_chat_id" in st.session_state:
+        del st.session_state["current_chat_id"]
+    st.switch_page("pages/feed.py")
+
 col1, col2 = st.columns([3, 1], gap = "large", vertical_alignment="center")
 
 with col1:
@@ -7,7 +17,7 @@ with col1:
      
 
      with col1_a:
-          st.title("AppName")
+          st.title("Minutes in Seconds")
 
      with col1_b:
          st.subheader("| Help Center")
