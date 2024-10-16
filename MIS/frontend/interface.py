@@ -295,7 +295,9 @@ class Chat:
         return await update_table_from_model(self._chat)
 
     async def send_message(self, text):
-        return await rag.query_retrieval(text, [])  # chat_input  #
+        return await rag.query_retrieval(
+            text, [m.id for m in await self.meetings]
+        )  # chat_input  #
 
     def get_action_items(self) -> list[str]:
         result = []
