@@ -5,7 +5,7 @@ import logging
 import sqlalchemy
 from time import monotonic
 
-from ..access import select_many_from_table
+from ..access import select_many_from_table, select_from_table
 from ..models import DB_Meeting
 
 from pydantic import BaseModel, ValidationError
@@ -370,7 +370,9 @@ class DB_MeetingChunk(PGVector):
                 .all()
             )
 
-        # Concatenate all chunks into one string
-        doc_content = "\n".join(chunk.document for chunk in consecutive_chunks)
+        # Fetch meeting details from the database
+        meeting = select_from_table(DB_Meeting, meeting_id)
+        # Construct the content
+        doc_content = f"Meeting: {meeting.name}\n Summary: {meeting.summary}\n Content:\n" + "\n".join(chunk.document for chunk in consecutive_chunks)
 
         return doc_content
