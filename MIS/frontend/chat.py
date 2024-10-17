@@ -25,7 +25,7 @@ def btn_click(index):
     st.session_state["current_chat_id"] = index
 
 
-screenD = ScreenData(setTimeout=1500)
+screenD = ScreenData(setTimeout=100)
 screen_d = screenD.st_screen_data()
 
 current_chat = asyncio.run(

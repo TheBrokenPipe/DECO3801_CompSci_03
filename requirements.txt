@@ -1,5 +1,5 @@
 typing
-streamlit
+streamlit==1.39.0
 streamlit-tags
 
 langchain
