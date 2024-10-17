@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import Any, List, Tuple, Dict
 import json
@@ -371,7 +372,7 @@ class DB_MeetingChunk(PGVector):
             )
 
         # Fetch meeting details from the database
-        meeting = select_from_table(DB_Meeting, meeting_id)
+        meeting = asyncio.run(select_from_table(DB_Meeting, meeting_id))
         # Construct the content
         doc_content = f"Meeting: {meeting.name}\n Summary: {meeting.summary}\n Content:\n" + "\n".join(chunk.document for chunk in consecutive_chunks)
 
