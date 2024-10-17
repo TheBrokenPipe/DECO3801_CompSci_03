@@ -5,9 +5,9 @@ print("\nLoading Index")
 if "summarise_chat" not in st.session_state:
     st.session_state["summarise_chat"] = True
 
-base_path = ""
+# Create list of pages, with the default page first
 file_list = [
-    'feed.py', # keep the default page first
+    'feed.py',
     'chat.py',
     'create_chat.py',
     'create_topic.py',
@@ -28,7 +28,7 @@ for file in file_list:
     # Create a readable name by removing underscores and the file extension
     file_name = file.replace('.py', '')
     # Create the full path by concatenating base_path and file name
-    full_path = base_path + file
+    full_path = file
     # Add to dictionary
     page = st.Page(full_path, title=file_name)
     page_list.append(page)
@@ -37,4 +37,3 @@ for file in file_list:
 
 pg = st.navigation(page_list, position="hidden")
 pg.run()
-

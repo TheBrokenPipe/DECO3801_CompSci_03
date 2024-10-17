@@ -19,13 +19,15 @@ async def insert_into_table(
 
     # Check if all objects are instances of BaseModel
     for obj in objs:
-        assert issubclass(type(obj), BaseModel), f"Object is not a pydantic model: {obj}"
+        assert issubclass(type(obj), BaseModel), \
+            f"Object is not a pydantic model: {obj}"
 
     # Prepare the first object to extract table details
     first_obj = objs[0]
 
     # Remove attributes that are None from the dictionary
-    data_list = [{k: v for k, v in obj.model_dump().items() if v is not None} for obj in objs]
+    data_list = [{k: v for k, v in obj.model_dump().items() if v is not None}
+                 for obj in objs]
 
     # Dynamically generate column names and placeholders for the first object
     columns = ', '.join(data_list[0].keys())
@@ -33,7 +35,7 @@ async def insert_into_table(
 
     # Generate SQL query
     sql = f"""
-        INSERT INTO public.{first_obj.__tablename__} ({columns}) 
+        INSERT INTO public.{first_obj.__tablename__} ({columns})
         VALUES {', '.join([f"({placeholders})" for _ in objs])}
         RETURNING *;
     """
@@ -43,7 +45,8 @@ async def insert_into_table(
         params = []
         for data in data_list:
             params.extend(
-                map(lambda v: dumps(v) if isinstance(v, dict) else v, data.values())
+                map(lambda v: dumps(v) if isinstance(v, dict)
+                    else v, data.values())
             )
 
         # Execute the SQL query and fetch all results

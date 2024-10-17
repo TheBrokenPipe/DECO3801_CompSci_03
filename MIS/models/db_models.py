@@ -1,7 +1,10 @@
 from pydantic import BaseModel
 from datetime import datetime
 import warnings
-warnings.filterwarnings("ignore", message="Field .* has conflict with protected namespace .*")
+
+warnings.filterwarnings(
+    "ignore", message="Field .* has conflict with protected namespace .*"
+)
 
 
 class DatabaseModel(BaseModel):
@@ -23,7 +26,8 @@ class DatabaseModel(BaseModel):
 
     def get_changes(self) -> dict:
         """
-        Returns a dictionary of fields that have been modified, with the format:
+        Returns a dictionary of fields that have been modified,
+        with the format:
         {field_name: (original_value, current_value)}
         """
         current_state = self.dict()
@@ -40,6 +44,7 @@ class DatabaseModel(BaseModel):
     def __h__(self):
         return hash(self.)
     """
+
 
 class DB_Meeting(DatabaseModel):
     __tablename__ = "meeting"
