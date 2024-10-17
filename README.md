@@ -21,25 +21,10 @@ Make sure Docker is running, then run `python setup.py` and follow the prompts.
 
 ## Production Dependencies
 ### Platforms / Tools
-* [Python 3](https://www.python.org/)
-* [Docker](https://www.docker.com/)
-* [pgvector](https://hub.docker.com/r/pgvector/pgvector)
-* [Ollama](https://ollama.com/)
-* [FFmpeg](https://ffmpeg.org)
+[Python 3](https://www.python.org/) | [Docker](https://www.docker.com/) | [pgvector](https://hub.docker.com/r/pgvector/pgvector) | [Ollama](https://ollama.com/) | [FFmpeg](https://ffmpeg.org)
 
 ### Libraries
-* [langchain](https://github.com/langchain-ai/langchain)
-* [langchain_community](https://pypi.org/project/langchain-community/)
-* [langchain_postgres](https://pypi.org/project/langchain-postgres/)
-* [langchain_openai](https://pypi.org/project/langchain-openai/)
-* [Streamlit](https://github.com/streamlit/streamlit)
-* [Streamlit-tags](https://pypi.org/project/streamlit-tags/)
-* [docker](https://pypi.org/project/docker/)
-* [psycopg](https://pypi.org/project/psycopg/)
-* [python-dotenv](https://pypi.org/project/python-dotenv/)
-* [requests](https://pypi.org/project/requests/)
-* [WhisperX](https://github.com/Hasan-Naseer/whisperX/)
-* [langchain-ollama](https://pypi.org/project/langchain-ollama/)
+[langchain](https://github.com/langchain-ai/langchain) | [langchain_community](https://pypi.org/project/langchain-community/) | [langchain_postgres](https://pypi.org/project/langchain-postgres/) | [langchain_openai](https://pypi.org/project/langchain-openai/) | [Streamlit](https://github.com/streamlit/streamlit) | [Streamlit-tags](https://pypi.org/project/streamlit-tags/) | [docker](https://pypi.org/project/docker/) | [psycopg](https://pypi.org/project/psycopg/) | [python-dotenv](https://pypi.org/project/python-dotenv/) | [requests](https://pypi.org/project/requests/) | [WhisperX](https://github.com/Hasan-Naseer/whisperX/) | [langchain-ollama](https://pypi.org/project/langchain-ollama/)
 
 ### AI Models
 * [Systran / Distil-Whisper: faster-distil-whisper-large-v3](https://huggingface.co/Systran/faster-distil-whisper-large-v3) - ASR
