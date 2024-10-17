@@ -19,7 +19,7 @@ def main() -> None:
     config.enable_automatic_punctuation = False
     config.audio_channel_count = 1
     p = Path("data/recordings/")
-    base_path = Path("data/.cache_riva/")
+    base_path = Path("data/riva_transcripts/")
     os.makedirs(base_path, exist_ok=True)
 
     files = p.glob("*.wav")
