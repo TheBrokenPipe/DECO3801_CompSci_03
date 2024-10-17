@@ -1,5 +1,5 @@
 from .access_base import AccessBase
-from ..models import DatabaseModel
+from MIS.models import DatabaseModel
 from pydantic import BaseModel
 from json import dumps
 from typing import TypeVar, Dict, Any, List, Type
