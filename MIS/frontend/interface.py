@@ -1,10 +1,13 @@
 from __future__ import annotations
 from typing import List
-from datetime import date
+from datetime import datetime
 import asyncio
 
-from MIS.access import *
-from MIS.models import *
+from MIS.access import select_many_from_table, AccessBase, select_from_table
+from MIS.access import insert_into_table, select_with_joins
+from MIS.access import update_table_from_model
+from MIS.models import DB_Meeting, DB_Tag, DB_Chat, DB_MeetingTag, DB_ChatTag
+from MIS.models import DB_ActionItem
 import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from MIS.backend.RAG import RAG
@@ -15,22 +18,25 @@ def get_rag():
     print("getting rag")
     return RAG()
 
+
 rag = get_rag()
 
 
 class Server:
 
     @staticmethod
-    async def get_all_meetings() -> list[Meeting]:
+    async def get_all_meetings() -> List[Meeting]:
         return [Meeting(m) for m in await select_many_from_table(DB_Meeting)]
 
     @staticmethod
-    async def get_all_topics() -> list[Topic]:
+    async def get_all_topics() -> List[Topic]:
         return [Topic(t) for t in await select_many_from_table(DB_Tag)]
 
     @staticmethod
-    async def get_all_chats() -> list[Chat]:
-        return list(reversed([Chat(c) for c in await select_many_from_table(DB_Chat)]))
+    async def get_all_chats() -> List[Chat]:
+        return list(
+            reversed([Chat(c) for c in await select_many_from_table(DB_Chat)])
+        )
 
     @staticmethod
     async def get_latest_chats() -> Chat:
@@ -55,7 +61,7 @@ class Server:
 
     @staticmethod
     async def upload_meeting(
-            name: str, date: datetime, file: UploadedFile, topics: list[Topic]
+            name: str, date: datetime, file: UploadedFile, topics: List[Topic]
     ) -> Meeting:
         filename = "data/recordings/" + file.name
         with open(filename, "wb") as audiofile:
@@ -83,11 +89,15 @@ class Server:
         return meeting
 
     @staticmethod
-    async def get_meetings_by_name(meeting_names: list[str]) -> list[Meeting]:
-        return [Meeting(m) for m in await select_many_from_table(DB_Meeting, meeting_names, "name")]
+    async def get_meetings_by_name(meeting_names: List[str]) -> List[Meeting]:
+        return [
+            Meeting(m) for m in await select_many_from_table(
+                DB_Meeting, meeting_names, "name"
+            )
+        ]
 
     @staticmethod
-    async def create_chat(name: str, topics: list[Topic]) -> Chat:
+    async def create_chat(name: str, topics: List[Topic]) -> Chat:
         chat = Chat(
             await insert_into_table(
                 DB_Chat(
@@ -106,7 +116,7 @@ class Server:
         return chat
 
     @staticmethod
-    async def create_topic(name: str, meetings: list[Meeting]) -> Topic:
+    async def create_topic(name: str, meetings: List[Meeting]) -> Topic:
         topic = Topic(
             await insert_into_table(
                 DB_Tag(
@@ -144,11 +154,15 @@ class Topic:
 
     @property
     async def meetings(self):
-        return await select_with_joins(self._tag.name, [DB_MeetingTag, DB_Meeting])
+        return await select_with_joins(
+            self._tag.name, [DB_MeetingTag, DB_Meeting]
+        )
 
     @property
     async def action_items(self):
-        return await select_with_joins(self._tag.name, [DB_MeetingTag, DB_Meeting, DB_ActionItem])
+        return await select_with_joins(
+            self._tag.name, [DB_MeetingTag, DB_Meeting, DB_ActionItem]
+        )
 
     async def add_meeting(self, meeting: DB_Meeting) -> None:
         await insert_into_table(
@@ -196,7 +210,7 @@ class Meeting:
         return self._meeting.date
 
     @property
-    async def topics(self: Meeting) -> list[Topic]:
+    async def topics(self: Meeting) -> List[Topic]:
         return [
             Topic(t) for t in await select_with_joins(
                 self._meeting.id, [DB_Meeting, DB_MeetingTag, DB_Tag]
@@ -208,7 +222,7 @@ class Meeting:
         return self._meeting.summary
 
     @property
-    async def action_items(self: Meeting) -> list[str]:
+    async def action_items(self: Meeting) -> List[str]:
         return [
             a.text for a in await select_with_joins(
                 self._meeting.id,
@@ -225,7 +239,6 @@ class Meeting:
 
     # def _unlink_topic(self: Meeting, topic: Topic) -> None:
     #     self._topics.remove(topic)
-
 
     # def get_underlying_object(self: Meeting) -> backend.Meeting:
         # return self._obj
@@ -251,7 +264,7 @@ class Chat:
         return self._chat.history
 
     @property
-    async def topics(self) -> list[Topic]:
+    async def topics(self) -> List[Topic]:
         return [
             Topic(t) for t in await select_with_joins(
                 self._chat.id, [DB_Chat, DB_ChatTag, DB_Tag]
@@ -259,7 +272,7 @@ class Chat:
         ]
 
     @property
-    async def meetings(self) -> list[Meeting]:
+    async def meetings(self) -> List[Meeting]:
         return [
             Meeting(m) for m in await select_with_joins(
                 self._chat.id,
@@ -268,11 +281,12 @@ class Chat:
         ]
 
     @property
-    async def action_items(self) -> list[str]:
+    async def action_items(self) -> List[str]:
         return [
             a.text for a in await select_with_joins(
                 self._chat.id,
-                [DB_Chat, DB_ChatTag, DB_Tag, DB_MeetingTag, DB_Meeting, DB_ActionItem]
+                [DB_Chat, DB_ChatTag, DB_Tag, DB_MeetingTag,
+                 DB_Meeting, DB_ActionItem]
             )
         ]
 
@@ -280,13 +294,15 @@ class Chat:
     @st.cache_data(hash_funcs={"MIS.frontend.interface.Chat": __hash__})
     def summary(self) -> str:
         print("summarising")
-        return rag.summarise_chat([m.summary for m in asyncio.run(self.meetings)])
+        return rag.summarise_chat(
+            [m.summary for m in asyncio.run(self.meetings)]
+        )
 
-        result = ""
-        for meeting in asyncio.run(self.meetings):
-            result += meeting.get_meeting_summary() + "\n\n"
-        return result.strip()
-        # return "Summary for \"" + self.name + "\" (" + str(self.id) + ") Go HERE"
+        # result = ""
+        # for meeting in asyncio.run(self.meetings):
+        #     result += meeting.get_meeting_summary() + "\n\n"
+        # return result.strip()
+        # return f"Summary for \"{self.name}\" (" + str(self.id) + ") Go HERE"
 
     async def add_message(self, username, message):
         self._chat.history.append(
@@ -302,7 +318,7 @@ class Chat:
             text, [m.id for m in await self.meetings]
         )  # chat_input  #
 
-    def get_action_items(self) -> list[str]:
+    def get_action_items(self) -> List[str]:
         result = []
         for meeting in asyncio.run(self.meetings):
             result += asyncio.run(meeting.action_items)
@@ -313,11 +329,14 @@ class Chat:
 # server = Server()
 # me = server.create_user("TestUser", "p@ssword")
 # topic = server.create_topic("Executive Meetings", [], [me])
-# exec1 = server.upload_meeting(b'Hello World!', "meeting.txt", "First Executive Meeting", datetime.now(), [me], updateSummary)
+# exec1 = server.upload_meeting(b'Hello World!', "meeting.txt",
+#                               "First Executive Meeting",
+#                               datetime.now(), [me], updateSummary)
 # topic.add_meeting(exec1)
 
 
 server = Server()
+
 
 def updateSummary(currentSummary, actionItems):
     return (currentSummary, actionItems)

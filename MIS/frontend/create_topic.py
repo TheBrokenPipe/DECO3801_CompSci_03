@@ -7,13 +7,13 @@ col1, col2 = st.columns([6, 1], gap="large", vertical_alignment="center")
 with col1:
     if st.button('← Back'):
         if "current_chat_id" not in st.session_state:
-            st.switch_page("pages/feed.py")
+            st.switch_page("feed.py")
         else:
-            st.switch_page("pages/chat.py")
+            st.switch_page("chat.py")
 
 with col2:
     if st.button('Help'):
-        st.switch_page("pages/help.py")
+        st.switch_page("help.py")
 
 topics = asyncio.run(Server.get_all_topics())
 
@@ -43,11 +43,12 @@ if want_create:
     asyncio.run(
         Server.create_topic(
             meeting_name,
-            [m for m in existing_meetings if m.name.lower() in selected_meetings]
+            [m for m in existing_meetings
+             if m.name.lower() in selected_meetings]
         )
     )
 
     if "current_chat_id" not in st.session_state:
-        st.switch_page("pages/feed.py")
+        st.switch_page("feed.py")
     else:
-        st.switch_page("pages/chat.py")
+        st.switch_page("chat.py")

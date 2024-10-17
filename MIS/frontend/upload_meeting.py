@@ -12,13 +12,17 @@ with col1:
 
 with col2:
     if st.button('Help'):
-        st.switch_page("pages/help.py")
+        st.switch_page("help.py")
 
-st.write('Welcome! To start uploading your meeting, please give the meeting a unique name and upload the transcript/recording from your computer')
+st.write(
+    "Welcome! To start uploading your meeting, please give the meeting " +
+    "a unique name and upload the transcript/recording from your computer"
+)
 
 meeting_name = st.text_input("Enter the name of the meeting:")
 
-meeting_date = st.date_input("On what date did the event take place?", format="DD/MM/YYYY")
+meeting_date = st.date_input("On what date did the event take place?",
+                             format="DD/MM/YYYY")
 
 existing_topics = asyncio.run(Server.get_all_topics())
 selected_topics = stt.st_tags(
@@ -33,7 +37,8 @@ print(selected_topics)
 print([t for t in existing_topics if t.name.lower() in selected_topics])
 
 
-uploaded_file = st.file_uploader("Upload Recording/Transcript", type=['mp3', 'mp4', 'txt', 'wav'])
+uploaded_file = st.file_uploader("Upload Recording/Transcript",
+                                 type=['mp3', 'mp4', 'txt', 'wav'])
 
 if uploaded_file is not None:
     st.write(f"{meeting_name} uploaded successfully.")
@@ -51,20 +56,21 @@ if next1:
             name=meeting_name,
             date=meeting_date,
             file=uploaded_file,
-            topics=[t for t in existing_topics if t.name.lower() in selected_topics]
+            topics=[t for t in existing_topics
+                    if t.name.lower() in selected_topics]
         )
     )
     if "current_chat_id" not in st.session_state:
-        st.switch_page("pages/feed.py")
+        st.switch_page("feed.py")
     else:
-        st.switch_page("pages/chat.py")
+        st.switch_page("chat.py")
 
     # TODO skipping the rest to make this work
     if uploaded_file:
         st.session_state["new_meeting_name"] = meeting_name
         st.session_state["new_meeting_date"] = meeting_date
         st.session_state["new_meeting_file"] = uploaded_file
-        st.switch_page("pages/upload_meeting2.py")
+        st.switch_page("upload_meeting2.py")
     else:
         st.warning("Please upload a main meeting file")
 
@@ -76,6 +82,6 @@ if next1:
 
 if want_back:
     if "current_chat_id" not in st.session_state:
-        st.switch_page("pages/feed.py")
+        st.switch_page("feed.py")
     else:
-        st.switch_page("pages/chat.py")
+        st.switch_page("chat.py")

@@ -1,15 +1,8 @@
-from time import time
-import asyncio
 import logging
-from collections import deque
 
 from .access_base import AccessBase
-from json import dumps
-from typing import TypeVar, Callable, List, Type, Any, Optional
+from typing import TypeVar, List, Type, Any, Optional, Union
 from pydantic import BaseModel
-from typing import Type
-import importlib
-import inspect
 from collections import defaultdict
 
 # Define a generic type variable that must be a subclass of BaseModel
@@ -18,21 +11,27 @@ BaseModelSubClass = TypeVar('BaseModelSubClass', bound=BaseModel)
 
 async def count_from_table(
     model: Type[BaseModelSubClass],
-    value: [int | str | float | tuple | List[int | str | float | tuple]],
+    value: Union[int | str | float | tuple | List[int | str | float | tuple]],
     key_names: str | tuple[str, tuple[str, ...]],
     always_return_list=True
 ) -> int | List[int]:
     """
-    Counts the number of records in the table that match the given key(s) and value(s).
-    Processes the SQL as if it's always handling multiple values.
-    Returns either a single count or a list of counts based on always_return_list.
+    Counts the number of records in the table that match the given key(s)
+    and value(s). Processes the SQL as if it's always handling multiple
+    values. Returns either a single count or a list of counts based
+    on always_return_list.
 
     Parameters:
         model (BaseModelSubClass): The database model class to query.
-        value (int | str | float | tuple | list): The value(s) to match against the key_names column(s).
-        key_names (str | tuple): The column name(s) to match the value(s) against.
-        always_return_list (bool): If True, always return a list of counts, even if there's only one value.
-                                   If False, return a single count if only one value is provided.
+        value (int | str | float | tuple | list): The value(s) to match
+                                                  against the key_names
+                                                  column(s).
+        key_names (str | tuple): The column name(s) to match the
+                                 value(s) against.
+        always_return_list (bool): If True, always return a list of counts,
+                                   even if there's only one value. If False,
+                                   return a single count if only one value
+                                   is provided.
 
     Returns:
         int or List[int]: The count(s) of matching records.
@@ -58,12 +57,21 @@ async def count_from_table(
     for val in values:
         if len(key_names) == 1:
             if isinstance(val, tuple):
-                raise ValueError(f"Expected single value for key_name '{key_names[0]}', got tuple {val}")
+                raise ValueError(
+                    f"Expected single value for key_name '{key_names[0]}',"
+                    " got tuple {val}"
+                )
         else:
             if not isinstance(val, (tuple, list)):
-                raise ValueError(f"Expected tuple value for composite key {key_names}, got {val}")
+                raise ValueError(
+                    f"Expected tuple value for composite key {key_names},"
+                    " got {val}"
+                )
             if len(val) != len(key_names):
-                raise ValueError(f"Length of value tuple {val} does not match length of key_names {key_names}")
+                raise ValueError(
+                    f"Length of value tuple {val} does not match length of "
+                    "key_names {key_names}"
+                )
 
     # Build the WHERE clause and parameters
     params = []
@@ -130,12 +138,14 @@ async def select_from_table(
     key_name: str | tuple = None
 ) -> BaseModelSubClass:
     # Ensure the input is a subclass of BaseModel
-    assert issubclass(model, BaseModel), f"Model is not a subclass of BaseModel: {model}"
+    assert issubclass(model, BaseModel), \
+        f"Model is not a subclass of BaseModel: {model}"
     if key_name is None:
         key_name = model.__primarykey__
 
     if type(key_name) is tuple:  # Composite Key
-        assert type(key_name) is type(value), f"both key_name and value must be tuples: {key_name} != {value}"
+        assert type(key_name) is type(value), \
+            f"both key_name and value must be tuples: {key_name} != {value}"
         assert len(key_name) == len(value)
         value = tuple(value)
     else:  # Single Key
@@ -166,7 +176,8 @@ async def select_many_from_table(
     one_per_input: bool = False
 ) -> List[BaseModelSubClass] | list[List[BaseModelSubClass]]:
     # Ensure the input is a subclass of BaseModel
-    assert issubclass(model, BaseModel), f"Model is not a subclass of BaseModel: {model}"
+    assert issubclass(model, BaseModel), \
+        f"Model is not a subclass of BaseModel: {model}"
 
     # Default to the model's primary key if no key_name is provided
     if key_name is None:
@@ -184,13 +195,16 @@ async def select_many_from_table(
         if isinstance(key_name, str):
             key_name = [key_name]  # Convert to list for consistent handling
 
-        assert type(key_name) in [list, tuple], "key_name must be a string, list, or tuple."
+        assert type(key_name) in [list, tuple], \
+            "key_name must be a string, list, or tuple."
 
         # Handle composite keys or single keys
         if isinstance(key_name, tuple):  # Composite Key
             # Ensure all provided keys are tuples of the correct length
-            assert all(isinstance(pkey, tuple) and len(pkey) == len(key_name) for pkey in values), \
-                "All provided keys must be tuples of the correct length."
+            assert all(
+                isinstance(pkey, tuple) and len(pkey) == len(key_name)
+                for pkey in values
+            ), "All provided keys must be tuples of the correct length."
 
             # Generate SQL placeholders for composite keys
             placeholder = f"({', '.join(['%s'] * len(key_name))})"
@@ -200,15 +214,17 @@ async def select_many_from_table(
 
         else:  # Single Key
             # Ensure all provided keys are of the correct type
-            assert all(isinstance(pkey, (int, str)) for pkey in values), \
-                "All provided keys must be int or str for a single primary key."
+            assert all(
+                isinstance(pkey, (int, str)) for pkey in values
+            ), "All provided keys must be int or str for a single primary key."
 
             placeholders = ', '.join(['%s'] * len(values))
             params = values
             filter_clause = f"{key_name[0]} IN ({placeholders})"
 
         # Generate the SQL query with WHERE clause
-        sql = f"SELECT * FROM public.{model.__tablename__} WHERE {filter_clause};"
+        sql = (f"SELECT * FROM public.{model.__tablename__} "
+               f"WHERE {filter_clause};")
 
     try:
         results = await AccessBase.db_fetchall(
@@ -236,11 +252,13 @@ async def select_many_from_table(
             for v in values:
                 grouped_results.append(key_to_results.get(v, []))
             if one_per_input:
-                grouped_results = [g[0] if len(g) else None for g in grouped_results]
+                grouped_results = [g[0] if len(g) else None
+                                   for g in grouped_results]
             return grouped_results
 
     except Exception as e:
-        print(f"Error fetching data with {'{'}{select_many_from_table.__name__}{'}'}: {e}")
+        fname = select_many_from_table.__name__
+        print(f"Error fetching data with {{{fname}}}: {e}")
         raise e
 
 
@@ -259,14 +277,18 @@ def get_join_condition(
     # Check if model_a has a foreign key to model_b
     for field_name, (fk_table, fk_field) in fk_a.items():
         if fk_table == model_b.__tablename__:
-            return f"INNER JOIN public.{model_b.__tablename__} AS {alias_b} ON {alias_a}.{field_name} = {alias_b}.{fk_field}"
+            return (f"INNER JOIN public.{model_b.__tablename__} AS {alias_b} "
+                    f"ON {alias_a}.{field_name} = {alias_b}.{fk_field}")
 
     # Check if model_b has a foreign key to model_a
     for field_name, (fk_table, fk_field) in fk_b.items():
         if fk_table == model_a.__tablename__:
-            return f"INNER JOIN public.{model_b.__tablename__} AS {alias_b} ON {alias_b}.{field_name} = {alias_a}.{fk_field}"
+            return (f"INNER JOIN public.{model_b.__tablename__} AS {alias_b} "
+                    f"ON {alias_b}.{field_name} = {alias_a}.{fk_field}")
 
-    raise Exception(f"No foreign key relationship found between {model_a.__tablename__} and {model_b.__tablename__}")
+    raise Exception("No foreign key relationship found between "
+                    f"{model_a.__tablename__} and {model_b.__tablename__}")
+
 
 async def select_with_joins(
     start_values: Any,
@@ -277,12 +299,16 @@ async def select_with_joins(
     grouped=False
 ) -> Any:
     """
-    Fetches instances of the target model by traversing foreign keys along the specified join_path.
-    Allows additional conditions on any table in the path via table_conditions.
-    If grouped is True, returns a list of lists corresponding to start_values.
+    Fetches instances of the target model by traversing foreign keys along the
+    specified join_path. Allows additional conditions on any table in the path
+    via table_conditions. If grouped is True, returns a list of lists
+    corresponding to start_values.
     """
     if not join_path or len(join_path) < 2:
-        raise ValueError("join_path must contain at least two models (start_model and target_model)")
+        raise ValueError(
+            "join_path must contain at least two models "
+            "(start_model and target_model)"
+        )
 
     start_model = join_path[0]
     target_model = join_path[-1]
@@ -314,9 +340,13 @@ async def select_with_joins(
         start_key_list = [start_key]
 
     start_key_aliases = [f"start_{k}" for k in start_key_list]
-    start_key_select = ', '.join([f"{table_aliases[0]}.{k} AS {alias}" for k, alias in zip(start_key_list, start_key_aliases)])
+    start_key_select = ', '.join(
+        [f"{table_aliases[0]}.{k} AS {alias}"
+         for k, alias in zip(start_key_list, start_key_aliases)]
+    )
 
-    sql = f"SELECT {table_aliases[-1]}.*, {start_key_select} FROM public.{start_model.__tablename__} AS {table_aliases[0]}"
+    sql = (f"SELECT {table_aliases[-1]}.*, {start_key_select} "
+           f"FROM public.{start_model.__tablename__} AS {table_aliases[0]}")
 
     # Build joins for each consecutive pair in the join_path
     joins = []
@@ -339,18 +369,28 @@ async def select_with_joins(
     if isinstance(start_key, (tuple, list)):
         # Composite key
         if not all(isinstance(v, (tuple, list)) for v in start_values):
-            raise ValueError("start_values must be a list of tuples when start_key is composite")
+            raise ValueError(
+                "start_values must be a list of tuples when start_key "
+                "is composite"
+            )
         if not all(len(v) == len(start_key_list) for v in start_values):
-            raise ValueError("Each start_value must have the same length as start_key")
+            raise ValueError(
+                "Each start_value must have the same length as start_key"
+            )
+
         # Build composite key IN clause
         placeholder = '(' + ', '.join(['%s'] * len(start_key_list)) + ')'
         placeholders = ', '.join([placeholder] * len(start_values))
-        where_clauses.append(f"({', '.join([f'{table_aliases[0]}.{k}' for k in start_key_list])}) IN ({placeholders})")
+        keys = ', '.join([f'{table_aliases[0]}.{k}' for k in start_key_list])
+        where_clauses.append(f"({keys}) IN ({placeholders})")
+
         params.extend([item for value in start_values for item in value])
     else:
         # Single key
         placeholders = ', '.join(['%s'] * len(start_values))
-        where_clauses.append(f"{table_aliases[0]}.{start_key} IN ({placeholders})")
+        where_clauses.append(
+            f"{table_aliases[0]}.{start_key} IN ({placeholders})"
+        )
         params.extend(start_values)
 
     # Add conditions from table_conditions
@@ -360,15 +400,23 @@ async def select_with_joins(
                 # Key is (model_class, occurrence_index)
                 model_class, occurrence_index = key
                 # Find the index in model_occurrences
-                indexes = [i for i, (m, occ) in enumerate(model_occurrences) if m == model_class and occ == occurrence_index]
+                indexes = [i for i, (m, occ) in enumerate(model_occurrences)
+                           if m == model_class and occ == occurrence_index]
+
                 if not indexes:
-                    raise ValueError(f"Model {model_class} with occurrence {occurrence_index} is not in the join_path")
+                    raise ValueError(
+                        f"Model {model_class} with occurrence "
+                        "{occurrence_index} is not in the join_path"
+                    )
             else:
                 # Key is model_class, apply to all occurrences
                 model_class = key
-                indexes = [i for i, (m, occ) in enumerate(model_occurrences) if m == model_class]
+                indexes = [i for i, (m, occ) in enumerate(model_occurrences)
+                           if m == model_class]
                 if not indexes:
-                    raise ValueError(f"Model {model_class} is not in the join_path")
+                    raise ValueError(
+                        f"Model {model_class} is not in the join_path"
+                    )
 
             for index in indexes:
                 alias = table_aliases[index]
@@ -389,8 +437,9 @@ async def select_with_joins(
             results = await AccessBase.db_fetchone(
                 sql=sql,
                 values=params,
-                function=lambda f: target_model(**f)  # Return row as is (dictionary)
+                function=lambda f: target_model(**f)
             )
+            # Return row as is (dictionary)
             return results
         else:
             results = await AccessBase.db_fetchall(
@@ -399,15 +448,19 @@ async def select_with_joins(
                 function=lambda f: f  # Return row as is (dictionary)
             )
             if not grouped:  # and not fetch_many
-                return [target_model(**r) for r in results]  # return the list of models
+                # return the list of models
+                return [target_model(**r) for r in results]
 
-            # Build a mapping from start_value to list of target_model instances
+            # Build a mapping from start_value to list of
+            # target_model instances
             key_to_results = defaultdict(list)
 
             for r in results:
                 # Extract start_value
                 if isinstance(start_key, (tuple, list)):
-                    start_value = tuple(r[f'start_{k}'] for k in start_key_list)
+                    start_value = tuple(
+                        r[f'start_{k}'] for k in start_key_list
+                    )
                     # Remove 'start_{k}' from r
                     for k in start_key_list:
                         del r[f'start_{k}']
@@ -431,4 +484,3 @@ async def select_with_joins(
         logger = logging.getLogger(__name__)
         logger.error(f"Error fetching data: {e}")
         raise e
-

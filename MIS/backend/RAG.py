@@ -1,24 +1,24 @@
+import asyncio
 import os
 from typing import Any, List, Tuple, Dict
-
+import json
 import logging
 import sqlalchemy
-import asyncio
+from time import monotonic
 
-from ..access import *
-from ..models import *
+from ..access import select_many_from_table, select_from_table
+from ..models import DB_Meeting
 
 from pydantic import BaseModel, ValidationError
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough, RunnableParallel
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain_core.runnables import RunnableParallel
 from langchain.docstore.document import Document
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_postgres import PGVector
-from sqlalchemy import SQLColumnExpression, cast, create_engine, delete, func, select, Integer
-from sqlalchemy.dialects.postgresql import JSON, JSONB, JSONPATH, UUID, insert
-from langchain.globals import set_debug
+from sqlalchemy import cast, Integer
 import datetime
 
 
@@ -137,7 +137,10 @@ class RAG:
             "readable summary that could help a person understand the main "
             "points of the discussion without needing to read the entire "
             "text. Please avoid unnecessary details or tangential points.")
+        time = monotonic()
         summary = self.invoke_llm(system_prompt, transcript)
+        duration = monotonic() - time
+        self.logger.debug(f"Summarised transcription in {duration}s")
         if isinstance(self.llm, ChatOllama) and summary[:4] == "Here":
             summary = summary[summary.find("\n\n"):].strip()
         return summary
@@ -160,11 +163,19 @@ class RAG:
 
     def key_points_extraction(self, transcription):
         transcript = self.jsonl_to_txt(transcription)
-        return self.extract_specific_objects(transcript, KeyPoints)
+        time = monotonic()
+        key_points = self.extract_specific_objects(transcript, KeyPoints)
+        duration = monotonic() - time
+        self.logger.debug(f"Extracted key points in {duration}s")
+        return key_points
 
     def action_item_extraction(self, transcription):
         transcript = self.jsonl_to_txt(transcription)
-        return self.extract_specific_objects(transcript, ActionItems)
+        time = monotonic()
+        action_items = self.extract_specific_objects(transcript, ActionItems)
+        duration = monotonic() - time
+        self.logger.debug(f"Extracted key points in {duration}s")
+        return action_items
 
     def summarise_meeting(self, transcript) -> Dict:
         return {
@@ -189,29 +200,42 @@ class RAG:
         }
         return output
 
-    async def query_retrieval(self, query_text: str, meeting_ids: List[int]) -> tuple[str, list]:
+    async def query_retrieval(self, query_text: str,
+                              meeting_ids: List[int]) -> tuple[str, list]:
 
         if len(meeting_ids) > 0:
-            retriever = self.vector_store.as_retriever(search_type="similarity_score_threshold",
-                                                       search_kwargs={'k': 3, 'score_threshold': 0.5,
-                                                                      'filter': {"meeting_id": {"$in": meeting_ids}}})
+            retriever = self.vector_store.as_retriever(
+                search_type="similarity_score_threshold",
+                search_kwargs={'k': 3, 'score_threshold': 0.5,
+                               'filter': {"meeting_id": {"$in": meeting_ids}}}
+            )
         else:
-            retriever = self.vector_store.as_retriever(search_type="similarity_score_threshold",
-                                                       search_kwargs={'k': 3, 'score_threshold': 0.5})
+            retriever = self.vector_store.as_retriever(
+                search_type="similarity_score_threshold",
+                search_kwargs={'k': 3, 'score_threshold': 0.5}
+            )
 
         system_prompt = (
-            "You are an assistant for question-answering tasks. Use the following pieces of "
-            "retrieved context to answer the question. If you don't know the answer, say that "
-            "you don't know. Do not include any general information unless necessary. "
-            "Use three sentences maximum and keep the answer concise. \n\n Context: {context}"
+            "You are an assistant for question-answering tasks. Use the "
+            "following pieces of retrieved context to answer the question. "
+            "If you don't know the answer, say that you don't know. Do not "
+            "include any general information unless necessary. Use three "
+            "sentences maximum and keep the answer concise. \n\n"
+            "Context: {context}"
         )
-        prompt = ChatPromptTemplate.from_messages([("system", system_prompt,), ("human", "{question}")])
 
-        retrieval_chain = RunnableParallel(docs=retriever, question=RunnablePassthrough())
+        prompt = ChatPromptTemplate.from_messages([("system", system_prompt,),
+                                                   ("human", "{question}")])
 
-        inference_chain = RunnableLambda(self.format_docs) | prompt | self.llm | StrOutputParser()
+        retrieval_chain = RunnableParallel(docs=retriever,
+                                           question=RunnablePassthrough())
 
-        qa_chain = retrieval_chain | RunnableParallel(output=inference_chain, sources=RunnablePassthrough())
+        docs_runnable = RunnableLambda(self.format_docs)
+        inference_chain = docs_runnable | prompt | self.llm | StrOutputParser()
+        output_chain = RunnableParallel(output=inference_chain,
+                                        sources=RunnablePassthrough())
+
+        qa_chain = retrieval_chain | output_chain
 
         response = qa_chain.invoke(query_text)
 
@@ -252,7 +276,14 @@ class RAG:
 
         return self.invoke_llm(system_prompt, user_prompt)
 
-    async def get_sources_list(self, chunks: List[Document]) -> List[Dict[str, Any]]:
+    def chunk_key(self, chunk):
+        meeting_id = str(chunk.metadata["meeting_id"])
+        start_time = str(int(chunk.metadata["start_time"]))
+        return meeting_id + start_time
+
+    async def get_sources_list(
+            self, chunks: List[Document]
+    ) -> List[Dict[str, Any]]:
         # Fetch meeting data for the chunks
         meetings_dict = {m.id: m for m in await select_many_from_table(
             DB_Meeting,
@@ -272,7 +303,7 @@ class RAG:
                 "start_time": format_time(int(chunk.metadata["start_time"])),
                 "end_time": format_time(int(chunk.metadata["end_time"])),
                 "meeting": meetings_dict[chunk.metadata["meeting_id"]],
-                "key": str(chunk.metadata["meeting_id"])+str(int(chunk.metadata["start_time"]))
+                "key": self.chunk_key(chunk)
             } for chunk in chunks
         ]
 
@@ -280,7 +311,9 @@ class RAG:
 
 
 class DB_MeetingChunk(PGVector):
-    def _results_to_docs_and_scores(self, results: Any) -> List[Tuple[Document, float]]:
+    def _results_to_docs_and_scores(
+            self, results: Any
+    ) -> List[Tuple[Document, float]]:
         """Return docs and scores from results."""
         docs = [
             (
@@ -296,7 +329,8 @@ class DB_MeetingChunk(PGVector):
         return docs
 
     def get_content_with_context(self, chunk, n=2) -> str:
-        # n is number of chunks to get, if n=2 it will return the original with the 2 chunks above and 2 chunks below
+        # n is number of chunks to get, if n=2 it will return the original
+        # with the 2 chunks above and 2 chunks below
         with self._make_sync_session() as session:  # type: ignore[arg-type]
             collection = self.get_collection(session)
 
@@ -318,21 +352,31 @@ class DB_MeetingChunk(PGVector):
                     {"chunk_id": {"$in": ids}},
                 ]
             }
-            filter_by = [self.EmbeddingStore.collection_id == collection.uuid, self._create_filter_clause(filter)]
+
+            filter_by = [self.EmbeddingStore.collection_id == collection.uuid,
+                         self._create_filter_clause(filter)]
 
             consecutive_chunks: List[Any] = (
                 session.query(
                     self.EmbeddingStore,
                 )
                 .filter(*filter_by)
-                .order_by(sqlalchemy.asc(cast(self.EmbeddingStore.cmetadata["chunk_id"].astext, Integer)))  # check
+                .order_by(sqlalchemy.asc(cast(
+                    self.EmbeddingStore.cmetadata["chunk_id"].astext, Integer)
+                ))  # check
                 .join(
                     self.CollectionStore,
-                    self.EmbeddingStore.collection_id == self.CollectionStore.uuid,)
+                    self.EmbeddingStore.collection_id
+                    == self.CollectionStore.uuid,)
                 .all()
             )
 
-        # Concatenate all chunks into one string
-        doc_content = "\n".join(chunk.document for chunk in consecutive_chunks)
+        # Fetch meeting details from the database
+        meeting = asyncio.run(select_from_table(DB_Meeting, meeting_id))
+        # Construct the content
+        doc_content = (
+            f"Meeting: {meeting.name}\nSummary: {meeting.summary}\nContent:\n"
+            + "\n".join(chunk.document for chunk in consecutive_chunks)
+        )
 
         return doc_content
