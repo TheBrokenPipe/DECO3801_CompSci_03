@@ -8,7 +8,7 @@ if home_button:
         del st.session_state["transcript_view_id"]
     if "current_chat_id" in st.session_state:
         del st.session_state["current_chat_id"]
-    st.switch_page("pages/feed.py")
+    st.switch_page("feed.py")
 
 col1, col2 = st.columns([3, 1], gap="large", vertical_alignment="center")
 

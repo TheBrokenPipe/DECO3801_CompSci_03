@@ -12,7 +12,7 @@ if "tried_submit" not in st.session_state:
 col1, col2 = st.columns([6, 1], gap="large", vertical_alignment="center")
 with col1:
     if st.button('← Back', key="backTo2"):
-        st.switch_page("pages/upload_meeting2.py")
+        st.switch_page("upload_meeting2.py")
 
 # a list of all the usernames in the server.
 userNames = list(map(lambda user: user.get_name(), server.get_users()))
@@ -48,7 +48,7 @@ if st.session_state["tried_submit"]:
 col1, col2, col3 = st.columns([1, 4, 1], gap="large", vertical_alignment="top")
 with col1:
     if st.button("Previous", key="previous"):
-        st.switch_page("pages/upload_meeting2.py")
+        st.switch_page("upload_meeting2.py")
 
 with col2:
     st.write("")
@@ -81,7 +81,7 @@ if submit and consent:
         callback=updateSummary
     )
 
-    st.switch_page("pages/chat.py")
+    st.switch_page("chat.py")
     st.session_state["tried_submit"] = False
 
 if submit and not consent:

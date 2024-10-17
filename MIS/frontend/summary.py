@@ -18,7 +18,7 @@ back_button = st.button("🔙", key="backButton")
 
 if back_button:
     st.session_state["summarise_chat"] = True
-    st.switch_page("pages/chat.py")
+    st.switch_page("chat.py")
 
 topics = asyncio.run(chat.topics)
 
@@ -86,4 +86,4 @@ with col2.expander("Recent Meetings", expanded=True):
             # bcol3.button("Remove")
 
 if any(transcript_buttons):
-    st.switch_page("pages/transcript_view.py")
+    st.switch_page("transcript_view.py")

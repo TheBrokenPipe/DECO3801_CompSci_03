@@ -6,9 +6,9 @@ from annotated_text import annotated_text
 
 print("Loading Feed")
 if "current_chat_id" in st.session_state:
-    st.switch_page("pages/chat.py")
+    st.switch_page("chat.py")
 if "transcript_view_id" in st.session_state:
-    st.switch_page("pages/transcript_view.py")
+    st.switch_page("transcript_view.py")
 
 
 def transcript_btn_click(index):
@@ -97,10 +97,10 @@ with st.sidebar:
 
 # # SET BUTTONS
 if new_chat_button:
-    st.switch_page("pages/create_chat.py")
+    st.switch_page("create_chat.py")
 
 if upload_button:
-    st.switch_page("pages/upload_meeting.py")
+    st.switch_page("upload_meeting.py")
 
 if new_topic_button:
-    st.switch_page("pages/create_topic.py")
+    st.switch_page("create_topic.py")

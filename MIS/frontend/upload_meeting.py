@@ -12,7 +12,7 @@ with col1:
 
 with col2:
     if st.button('Help'):
-        st.switch_page("pages/help.py")
+        st.switch_page("help.py")
 
 st.write(
     "Welcome! To start uploading your meeting, please give the meeting " +
@@ -61,16 +61,16 @@ if next1:
         )
     )
     if "current_chat_id" not in st.session_state:
-        st.switch_page("pages/feed.py")
+        st.switch_page("feed.py")
     else:
-        st.switch_page("pages/chat.py")
+        st.switch_page("chat.py")
 
     # TODO skipping the rest to make this work
     if uploaded_file:
         st.session_state["new_meeting_name"] = meeting_name
         st.session_state["new_meeting_date"] = meeting_date
         st.session_state["new_meeting_file"] = uploaded_file
-        st.switch_page("pages/upload_meeting2.py")
+        st.switch_page("upload_meeting2.py")
     else:
         st.warning("Please upload a main meeting file")
 
@@ -82,6 +82,6 @@ if next1:
 
 if want_back:
     if "current_chat_id" not in st.session_state:
-        st.switch_page("pages/feed.py")
+        st.switch_page("feed.py")
     else:
-        st.switch_page("pages/chat.py")
+        st.switch_page("chat.py")

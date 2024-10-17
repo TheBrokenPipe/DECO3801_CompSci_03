@@ -7,7 +7,7 @@ import json
 
 if "transcript_view_id" not in st.session_state:
     print("transcript failed to show")
-    st.switch_page("pages/feed.py")
+    st.switch_page("feed.py")
 
 
 # return ordered array of the text paragraphs for the transcript
@@ -53,14 +53,14 @@ header_help = rightHeader.button("Help", key="idjwn")
 if header_back:
     del st.session_state["transcript_view_id"]
     if not st.session_state["summarise_chat"]:
-        st.switch_page("pages/summary.py")
+        st.switch_page("summary.py")
     elif "current_chat_id" in st.session_state:
-        st.switch_page("pages/chat.py")
+        st.switch_page("chat.py")
     else:
-        st.switch_page("pages/feed.py")
+        st.switch_page("feed.py")
 
 if header_help:
-    st.switch_page("pages/help.py")
+    st.switch_page("help.py")
 
 meeting = asyncio.run(
     Server.get_meeting_by_id(st.session_state["transcript_view_id"])
@@ -96,7 +96,7 @@ if meeting.transcript:
             start_time = start_time.strftime("%H:%M:%S" if hours > 0
                                              else "%M:%S")
 
-            timestamp = {speaker_colors[speaker]}[{start_time}]
+            timestamp = f"{speaker_colors[speaker]}[{start_time}]"
             text = line['text']
             st.markdown(
                 f'''

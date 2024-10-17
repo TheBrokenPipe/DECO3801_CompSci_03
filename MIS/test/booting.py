@@ -15,4 +15,4 @@ with st.spinner("Loading application"):
     # load everything needed here.
     time.sleep(1)
 
-st.switch_page("pages/feed.py")
+st.switch_page("feed.py")

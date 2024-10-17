@@ -14,9 +14,9 @@ chats = asyncio.run(Server.get_all_chats())
 #     chat_names.append(chat._chat.name)
 
 if "current_chat_id" not in st.session_state:
-    st.switch_page("pages/feed.py")
+    st.switch_page("feed.py")
 if "transcript_view_id" in st.session_state:
-    st.switch_page("pages/transcript_view.py")
+    st.switch_page("transcript_view.py")
 
 print(st.session_state["current_chat_id"])
 
@@ -102,18 +102,18 @@ if chat_input:
 
 if home_button:
     del st.session_state["current_chat_id"]
-    st.switch_page("pages/feed.py")
+    st.switch_page("feed.py")
 
 if new_chat_button:
-    st.switch_page("pages/create_chat.py")
+    st.switch_page("create_chat.py")
 
 if summary_button:
     st.session_state["summarise_chat"] = False
     print("Chat State:", st.session_state["summarise_chat"])
-    st.switch_page("pages/summary.py")
+    st.switch_page("summary.py")
 
 if upload_button:
-    st.switch_page("pages/upload_meeting.py")
+    st.switch_page("upload_meeting.py")
 
 if new_topic_button:
-    st.switch_page("pages/create_topic.py")
+    st.switch_page("create_topic.py")

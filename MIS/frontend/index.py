@@ -5,20 +5,16 @@ print("\nLoading Index")
 if "summarise_chat" not in st.session_state:
     st.session_state["summarise_chat"] = True
 
-base_path = "pages/" 
+base_path = ""
 file_list = [
     'feed.py', # keep the default page first
     'chat.py',
     'create_chat.py',
-    'booting.py',
     'create_topic.py',
     'help.py',
     'summary.py',
-    'topic_management.py',
     'transcript_view.py',
     'upload_meeting.py',
-    'upload_meeting2.py',
-    'upload_meeting3.py'
 ]
 # Create a list with pages
 page_list = []  # list of pages to be used to set up navigation
