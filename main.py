@@ -5,9 +5,9 @@ import argparse
 
 from dotenv import load_dotenv
 
-from MIS import DockerManager
-from MIS import DB_Manager
-from MIS import Ingestion
+from MIS.backend.docker_manager import DockerManager
+from MIS.backend.database_manager import DB_Manager
+from MIS.backend.ingestion import Ingestion
 
 load_dotenv()
 

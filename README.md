@@ -8,8 +8,8 @@ A web application where users can upload meetings and meeting-like events, which
 2. Install pytorch per instructions [here](https://pytorch.org/get-started/locally/)
 3. Install remaining python dependencies by running `pip install -r requirements.txt`
 4. Install Ollama from [here](https://ollama.com/download)
-5. Install FFmpeg
-6. Install Docker 
+5. Install FFmpeg from [here](https://ffmpeg.org/download.html)
+6. Install Docker from [here](https://www.docker.com/)
 
 ## Setup
 Make sure Docker is running, then run `python setup.py` and follow the prompts.
@@ -34,7 +34,7 @@ Make sure Docker is running, then run `python setup.py` and follow the prompts.
 
 
 ## Data Sources
-* [AMI Corpus](https://groups.inf.ed.ac.uk/ami/corpus/) - source of meeting recordings used for test and sample data
+* [AMI Corpus](https://groups.inf.ed.ac.uk/ami/corpus/) - source of meeting recordings for test and sample data, used under Creative Commons open licence
 
 ## Test Dependencies
 ### AI Models

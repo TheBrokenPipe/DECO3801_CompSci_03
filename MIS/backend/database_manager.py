@@ -8,21 +8,9 @@ class DB_Manager:
 
     @staticmethod
     async def setup_table_structure():
+        """Setup tables and PGVector extension in postgresql DB."""
         logger = logging.getLogger(__name__)
         logger.debug("Starting Table Setup.")
-
-        # table_exists = await AccessBase.db_fetchone(
-        #     """
-        #     SELECT EXISTS (
-        #         SELECT FROM information_schema.tables
-        #         WHERE table_name = 'document'
-        #     );
-        #     """
-        # )
-        # # Exit if the tables have already been set up
-        # if table_exists:
-        #     if verbose: print("Database tables are already set up.")
-        #     return
 
         await AccessBase.db_execute("CREATE EXTENSION IF NOT EXISTS vector;")
         logger.debug("pgvector extension installed successfully.")

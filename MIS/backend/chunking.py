@@ -25,6 +25,7 @@ class Chunks:
             self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
     def get_embedding(self, text):
+        """Embed text for comparison during semantic chunking"""
         if isinstance(self.embeddings, OpenAIEmbeddings):
             embedding = self.embeddings.embed_documents([text])[0]
         else:
@@ -39,6 +40,7 @@ class Chunks:
         return jsonl_string
 
     def merge_speaker_lines(self, jsonl_string):
+        """Merge consecutive lines by the same speaker in a transcript"""
         # Parse the JSONL input into a list of dictionaries
         transcript_lines = []
         for line in jsonl_string.strip().split("\n"):
@@ -62,21 +64,25 @@ class Chunks:
         return merged_lines
 
     def get_batch_embedding(self, texts: List[str]):
+        """Embed several strings as a batch."""
         if isinstance(self.embeddings, OllamaEmbeddings):
             texts = ["clustering: " + t for t in texts]
         embedding = self.embeddings.embed_documents(texts)
         return embedding
 
     def get_text(self, chunk: List[dict]) -> List[str]:
+        """Extract text strings from chunk dictionaries."""
         return [line['text'] for line in chunk]
 
     def get_chunk_text(self, chunk: List[dict]):
+        """Format chunk text."""
         lines = [f"{line['speaker']}: {line['text']}" for line in chunk]
         text = "\n".join(lines)
         return text
 
     @staticmethod
     def thresh_multiplier(lines, alpha=10, k=10):
+        """Moving threshold that varies as number of lines increases."""
         return 1 - (
             1 / (
                 1 + exp(
@@ -89,6 +95,7 @@ class Chunks:
 
     def semantic_chunking(self, merged_lines: List[dict],
                           filepath: str, threshold=0.6) -> List[Document]:
+        """Run semantic chunking algorithm over a list of lines."""
         original_threshold = threshold
 
         embeddings = self.get_batch_embedding(self.get_text(merged_lines))
@@ -153,6 +160,7 @@ class Chunks:
         return chunks
 
     def chunk_transcript(self, meeting: DB_Meeting) -> List[Document]:
+        """Chunk a meeting using semantic chunking."""
         file_path = meeting.file_transcript
         jsonl = self.load_jsonl_file(file_path)
         merged = self.merge_speaker_lines(jsonl)
